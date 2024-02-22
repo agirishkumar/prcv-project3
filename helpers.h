@@ -84,7 +84,7 @@ void erode(const cv::Mat &src, cv::Mat &dst, const cv::Mat &kernel);
    @param Mat regionMap - the destination map with pixels labeld with their region ids and 0 - background.
    @return int number of regions.
 */
-int regionGrowing(Mat &source, Mat &map, Mat &regionMap);
+int regionGrowing(Mat &source, Mat &regionMap);
 
 /**
    Creates a colored visualization of the region map.
