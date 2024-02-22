@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <numeric>
+#include <stack>
 
 using namespace cv;
 using namespace std;
@@ -374,4 +375,123 @@ void cleanThresholdedImage(Mat &src, Mat &dst)
 
   // Apply closing to close small holes
   closing(opened, dst, kernel);
+}
+
+/**
+   Region growing algorithm to find regions and give them ids.
+   @param Mat map - a map where each pixel is labeled 255 - foreground, 0 - background.
+   @param Mat regionMap - the destination map with pixels labeld with their region ids and 0 - background.
+   @return int number of regions.
+*/
+int regionGrowing(Mat &map, Mat &regionMap){
+    stack<tuple<int, int>> pixels;
+    Mat seen = Mat::zeros(map.size(), CV_8UC1);
+    regionMap = Mat::zeros(map.size(), CV_8UC1);
+    int regionIndex = 1;
+    // Iterate throught the image.
+    for(int i = 0; i < map.rows; i++){
+        for(int j = 0; j < map.cols; j++){
+            // If a pixel is foregrund then push it to the stack.
+            if(map.ptr<uchar>(i)[j] == 255 && regionMap.ptr<uchar>(i)[j] == 0){
+                tuple<int, int> pixel = make_tuple(i, j);
+                pixels.push(pixel);
+                // pop pixel and assign current region, for each pixels neighbor check if it is a foreground and push it to stack
+                while(!pixels.empty()){
+                    auto [x, y] = pixels.top();
+                    pixels.pop();
+
+                    regionMap.ptr<uchar>(x)[y] = regionIndex;
+
+                    auto checkAndPush = [&](int nx, int ny) {
+                        if (nx >= 0 && nx < map.rows && ny >= 0 && ny < map.cols && 
+                            map.at<uchar>(nx, ny) == 255 && seen.at<uchar>(nx, ny) == 0) {
+                            pixels.push({nx, ny});
+                            seen.at<uchar>(nx, ny) = 1; // Mark as visited
+                        }
+                    };
+
+                    seen.ptr<uchar>(x)[y] = 1;
+
+                    // Check and push neighboring pixels (including diagonals).
+
+                    checkAndPush(x + 1, y);
+                    checkAndPush(x - 1, y);
+                    checkAndPush(x, y + 1);
+                    checkAndPush(x, y - 1);
+                    
+                    checkAndPush(x + 1, y + 1);
+                    checkAndPush(x - 1, y - 1);
+                    checkAndPush(x - 1, y + 1);
+                    checkAndPush(x + 1, y - 1);
+
+                }
+                regionIndex++;
+            }
+        
+        }
+    }
+    return regionIndex - 1;
+}
+
+// Generate a random color.
+Vec3b randomColor() {
+    return Vec3b(rand() % 256, rand() % 256, rand() % 256);
+}
+
+/**
+   Creates a colored visualization of the region map.
+   @param Mat regionMap - a mat of type 8UC1 with each pixel's region id
+   @return Mat - 8UC3 Mat with colors assigned to each region.
+*/
+Mat regionColor(Mat &regionMap){
+    Mat coloredMap = Mat::zeros(regionMap.size(), CV_8UC3);
+    map<int, Vec3b> colorTable;
+    colorTable[0] = Vec3b(0,0,0);
+     for (int i = 0; i < regionMap.rows; i++) {
+        for (int j = 0; j < regionMap.cols; j++) {
+            uchar regionIndex = regionMap.at<uchar>(i, j);
+            if (colorTable.find(regionIndex) == colorTable.end()) {
+                colorTable[regionIndex] = randomColor();
+            }
+            // Set the pixel in the colored map to the color corresponding to its region
+            coloredMap.at<Vec3b>(i, j) = colorTable[regionIndex];
+        }
+    }
+
+    return coloredMap;
+}
+
+/**
+    Removes regions smaller than minSize number of pixels.
+    @param Mat regionMap - a mat of type 8UC1 with each pixel's region id.
+    @param int minSize - the minimum pixel size to be considered a region.
+    @return Mat - 8UC3 Mat with colors assigned to each region.
+*/
+Mat removeSmallRegions(Mat &regionMap, int minSize){
+    Mat newRegionMap = Mat::zeros(regionMap.size(), CV_8UC1);
+    map<int, int> regionSize;
+    int numRegions = 0;
+    for (int i = 0; i < regionMap.rows; i++) {
+        for (int j = 0; j < regionMap.cols; j++) {
+            int regionId = regionMap.ptr<uchar>(i)[j];
+            regionSize[regionId] += 1;
+            
+        }
+    }
+    map<int, int> newIds;
+    newIds[0] = 0;
+    int currentId = 1;
+    for (int i = 0; i < regionMap.rows; i++) {
+        for (int j = 0; j < regionMap.cols; j++) {
+            int regionId = regionMap.ptr<uchar>(i)[j];
+            if(regionSize[regionId] >= minSize && regionMap.ptr<uchar>(i)[j] != 0){
+                if (newIds.find(regionId) == newIds.end()) {
+                    newIds[regionId] = currentId++;
+                }
+                newRegionMap.ptr<uchar>(i)[j] = newIds[regionId];
+            }
+        }
+    }
+    return newRegionMap;
+    
 }

@@ -78,4 +78,27 @@ void dilate(const cv::Mat &src, cv::Mat &dst, const cv::Mat &kernel);
 //   const cv::Mat &kernel: The structuring element used for erosion.
 void erode(const cv::Mat &src, cv::Mat &dst, const cv::Mat &kernel);
 
+/**
+   Region growing algorithm to find regions and give them ids.
+   @param Mat map - a map where each pixel is labeled 255 - foreground, 0 - background.
+   @param Mat regionMap - the destination map with pixels labeld with their region ids and 0 - background.
+   @return int number of regions.
+*/
+int regionGrowing(Mat &source, Mat &regionMap);
+
+/**
+   Creates a colored visualization of the region map.
+   @param Mat regionMap - a mat of type 8UC1 with each pixel's region id
+   @return Mat - 8UC3 Mat with colors assigned to each region.
+*/
+Mat regionColor(Mat &regionMap);
+
+/**
+    Removes regions smaller than minSize number of pixels.
+    @param Mat regionMap - a mat of type 8UC1 with each pixel's region id.
+    @param int minSize - the minimum pixel size to be considered a region.
+    @return Mat - 8UC3 Mat with colors assigned to each region.
+*/
+Mat removeSmallRegions(Mat &regionMap, int minSize);
+
 #endif // MHELPERS_H
