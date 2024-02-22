@@ -31,5 +31,27 @@ int main() {
 
   waitKey(0);
 
+  Mat image = imread("images/img5P3.png");
+
+  Mat grey;
+  cvtColor(image, grey, COLOR_BGR2GRAY);
+  Mat thresholded;
+  imshow("image", grey);
+  waitKey(0);
+  threshold(grey, thresholded, 90, 255, THRESH_BINARY_INV);
+  imshow("image", thresholded);
+  waitKey(0);
+  Mat regionMap;
+  int regionCount = regionGrowing(src, thresholded, regionMap);
+  // cout << regionCount;
+  Mat coloredMap = regionColor(regionMap);
+  imshow("image", coloredMap);
+  waitKey(0);
+  Mat newRegion = removeSmallRegions(regionMap, 2000);
+  coloredMap = regionColor(newRegion);
+  imshow("image", newRegion);
+  waitKey(0);
+  return 0;
+
   return 0;
 }
