@@ -101,4 +101,23 @@ Mat regionColor(Mat &regionMap);
 */
 Mat removeSmallRegions(Mat &regionMap, int minSize);
 
+// Structure to hold region features
+struct RegionFeatures {
+    float percentFilled;
+    float boundingBoxAspectRatio;
+    cv::Point2f centroid; 
+    cv::Mat colorHistogram;
+};
+
+// Function declaration
+RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int regionID, const cv::Mat& originalImage) ;
+
+
+// Function to display computed features on the image
+void displayRegionFeatures(cv::Mat &image, const cv::Mat &regionMap, int regionID, const RegionFeatures &features);
+
+
+bool saveFeatureVectorToFile(const RegionFeatures& features, const std::string& label, const std::string& filename);
+
+
 #endif // MHELPERS_H

@@ -3,10 +3,13 @@
 #include <iostream>
 #include "helpers.h"
 #include <vector>
+#include <vector>
 #include <cstdlib>
 #include <ctime>
 #include <numeric>
 #include <stack>
+#include <fstream>
+#include <limits>
 
 using namespace cv;
 using namespace std;
@@ -123,7 +126,7 @@ int binaryThresholding(const Mat &src, Mat &dst)
       // Get the current pixel value
       uchar pixelValue = grayImage.at<uchar>(y, x);
 
-      if (pixelValue >= thresh)
+      if (pixelValue < thresh)
       {
         dst.at<uchar>(y, x) = maxval;
       }
@@ -214,13 +217,13 @@ int kmeansThresholding(const Mat &src, Mat &dst)
   {
     for (int x = 0; x < gray.cols; x++)
     {
-      if (gray.at<uchar>(y, x) > threshold)
+      if (gray.at<uchar>(y, x) <= threshold)
       {
-        dst.at<uchar>(y, x) = 255; // Above threshold
+        dst.at<uchar>(y, x) = 255; // Below or equal to threshold
       }
       else
       {
-        dst.at<uchar>(y, x) = 0; // Below threshold
+        dst.at<uchar>(y, x) = 0; // Above threshold
       }
     }
   }
@@ -384,6 +387,7 @@ void cleanThresholdedImage(Mat &src, Mat &dst)
    @return int number of regions.
 */
 int regionGrowing(Mat &map, Mat &regionMap){
+
     stack<tuple<int, int>> pixels;
     Mat seen = Mat::zeros(map.size(), CV_8UC1);
     regionMap = Mat::zeros(map.size(), CV_8UC1);
@@ -391,7 +395,7 @@ int regionGrowing(Mat &map, Mat &regionMap){
     // Iterate throught the image.
     for(int i = 0; i < map.rows; i++){
         for(int j = 0; j < map.cols; j++){
-            // If a pixel is foregrund then push it to the stack.
+            // If a pixel is foreground then push it to the stack.
             if(map.ptr<uchar>(i)[j] == 255 && regionMap.ptr<uchar>(i)[j] == 0){
                 tuple<int, int> pixel = make_tuple(i, j);
                 pixels.push(pixel);
@@ -495,3 +499,128 @@ Mat removeSmallRegions(Mat &regionMap, int minSize){
     return newRegionMap;
     
 }
+
+// Function to compute a color histogram for a region
+cv::Mat calculateColorHistogram(const cv::Mat& image, const cv::Mat& mask, int bins = 256) {
+    cv::Mat histogram;
+    const int channels[] = {0, 1, 2}; // For a 3-channel image
+    const int histSize[] = {bins, bins, bins};
+    const float range[] = {0, 256}; // Pixel value range
+    const float* ranges[] = {range, range, range};
+    
+    // Compute the histogram
+    cv::calcHist(&image, 1, channels, mask, histogram, 3, histSize, ranges, true, false);
+
+    // Normalize the histogram so that it's not affected by the image size
+    cv::normalize(histogram, histogram, 0, 1, cv::NORM_MINMAX);
+
+    return histogram;
+}
+
+
+/**
+ * Computes the features of a region in the given region map.
+ *
+ * @param regionMap the input region map
+ * @param regionID the ID of the region to compute features for
+ *
+ * @return a struct containing the percent filled and bounding box aspect ratio of the region
+ *
+ * @throws None
+ */
+RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int regionID, const cv::Mat& originalImage) {
+    // Extract the region corresponding to the regionID to create a mask
+    cv::Mat mask = regionMap == regionID;
+
+    // Calculate the bounding box of the region
+    cv::Rect boundingBox = cv::boundingRect(mask);
+
+    // Calculate the area of the region (number of non-zero pixels in the mask)
+    float area = cv::countNonZero(mask);
+
+    // Calculate the percent filled: ratio of the region area to the bounding box area
+    float percentFilled = area / static_cast<float>(boundingBox.area());
+
+    // Calculate the aspect ratio of the bounding box
+    float boundingBoxAspectRatio = static_cast<float>(boundingBox.height) / boundingBox.width;
+
+    // Calculate the centroid of the region
+    cv::Moments m = cv::moments(mask, true);
+    cv::Point2f centroid(static_cast<float>(m.m10 / m.m00), static_cast<float>(m.m01 / m.m00));
+
+    // Calculate the color histogram for the region using the mask
+    cv::Mat histogram = calculateColorHistogram(originalImage, mask);
+
+    // Return the calculated features, including the histogram
+    return {percentFilled, boundingBoxAspectRatio, centroid, histogram};
+}
+
+
+
+
+
+
+/**
+ * Display region features on the given image.
+ *
+ * @param image the input image
+ * @param regionMap the region map
+ * @param regionID the ID of the region to display
+ * @param features the features of the region to display
+ *
+ * @return void
+ *
+ * @throws None
+ */
+void displayRegionFeatures(Mat& image, const Mat& regionMap, int regionID, const RegionFeatures& features) {
+
+    // Mat invertedRegionMap;
+    // bitwise_not(regionMap, invertedRegionMap);
+
+    Mat region = regionMap == regionID;
+    Rect boundingBox = boundingRect(region);
+    rectangle(image, boundingBox, Scalar(0, 255, 0), 2);
+    string text = "Fill: " + to_string(features.percentFilled) + ", Aspect: " + to_string(features.boundingBoxAspectRatio);
+    putText(image, text, boundingBox.tl(), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
+}
+
+
+bool saveFeatureVectorToFile(const RegionFeatures& features, const std::string& label, const std::string& filename) {
+    std::ofstream file(filename, std::ios::out | std::ios::app); // Open in append mode
+    
+    if (!file.is_open()) {
+        std::cerr << "Unable to open the file: " << filename << std::endl;
+        return false;
+    }
+    
+    // Write the basic features
+    file << label << ","
+         << features.percentFilled << ","
+         << features.boundingBoxAspectRatio << ","
+         << features.centroid.x << ","
+         << features.centroid.y;
+    
+    // Flatten the histogram to a single row and write it to the file
+    if (!features.colorHistogram.empty()) {
+        cv::Mat flatHistogram;
+        if (features.colorHistogram.isContinuous()) {
+            flatHistogram = features.colorHistogram.reshape(1, 1); // Flatten the histogram
+        } else {
+            // Clone the data into a continuous Mat before reshaping if it's not already continuous
+            flatHistogram = features.colorHistogram.clone().reshape(1, 1);
+        }
+
+        // Write each histogram bin to the file
+        for (int i = 0; i < flatHistogram.cols; i++) {
+            file << "," << flatHistogram.at<float>(0, i);
+        }
+    }
+    
+    file << std::endl; // End of line for this feature vector
+    file.close(); // Close the file
+    return true;
+}
+
+
+
+
