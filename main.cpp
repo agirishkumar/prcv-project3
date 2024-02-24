@@ -15,6 +15,9 @@ int main() {
         return -1;
     }
 
+    namedWindow("Original Image", WINDOW_AUTOSIZE);
+    imshow("Original Image", src);
+
     Mat preprocessedImg, binaryImage, kmeansImage, cleanedImage;
 
     // Preprocess the image
@@ -22,20 +25,32 @@ int main() {
         cerr << "Error during image preprocessing." << endl;
         return -1;
     }
+
+    namedWindow("Preprocessed Image", WINDOW_AUTOSIZE);
+    imshow("Preprocessed Image", preprocessedImg);
   
     // Apply binary thresholding
     if (binaryThresholding(preprocessedImg, binaryImage) != 0) {
         cerr << "Error during binary thresholding." << endl;
         return -1;
     }
+
+    namedWindow("Binary thresholded Image", WINDOW_AUTOSIZE);
+    imshow("Binary thresholded Image", binaryImage);
   
     // Apply k-means thresholding
     if (kmeansThresholding(preprocessedImg, kmeansImage) != 0) {
         cerr << "Error during K-means thresholding." << endl;
         return -1;
     }
+
+    namedWindow("Kmeans thresholded Image", WINDOW_AUTOSIZE);
+    imshow("Kmeans thresholded Image", kmeansImage);
   
     cleanThresholdedImage(kmeansImage, cleanedImage);
+
+    namedWindow("Cleaned Image", WINDOW_AUTOSIZE);
+    imshow("Cleaned Image", cleanedImage);
 
     // Apply region growing on the cleaned, thresholded image
     Mat regionMap;
@@ -44,6 +59,9 @@ int main() {
 
     // Visualize initial segmentation
     Mat coloredMap = regionColor(regionMap);
+
+    namedWindow("Initial Segmentation", WINDOW_AUTOSIZE);
+    imshow("Initial Segmentation", coloredMap);
 
     // Filter out small regions and visualize the result
     Mat filteredRegionMap = removeSmallRegions(regionMap, 200); // Adjust the size threshold as needed
@@ -57,29 +75,19 @@ int main() {
     // Visualize the filtered segmentation
     Mat filteredColoredMap = regionColor(filteredRegionMap);
 
+    namedWindow("Filtered Segmentation", WINDOW_AUTOSIZE);
+    imshow("Filtered Segmentation", filteredColoredMap);
+
     // Compute and display features for each major region
     // Assuming you have defined computeRegionFeatures and displayRegionFeatures functions
     for (int regionID = 1; regionID <= filteredRegionCount; ++regionID) {
-        RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID, src);
-        displayRegionFeatures(src, filteredRegionMap, regionID, features);
+        RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID);
+        drawObb(src, calculateOrientedBoundingBox(filteredRegionMap, regionID, features.theta, features.centroid.x, features.centroid.y));
     }
 
-    namedWindow("Original Image", WINDOW_AUTOSIZE);
-    namedWindow("Preprocessed Image", WINDOW_AUTOSIZE);
-    namedWindow("Binary thresholded Image", WINDOW_AUTOSIZE);
-    namedWindow("Kmeans thresholded Image", WINDOW_AUTOSIZE);
-    namedWindow("Cleaned Image", WINDOW_AUTOSIZE);
-    namedWindow("Initial Segmentation", WINDOW_AUTOSIZE);
-    namedWindow("Filtered Segmentation", WINDOW_AUTOSIZE);
-    namedWindow("Feature Visualization", WINDOW_AUTOSIZE); // Additional window for feature visualization
-
-    imshow("Original Image", src);
-    imshow("Preprocessed Image", preprocessedImg);
-    imshow("Binary thresholded Image", binaryImage);
-    imshow("Kmeans thresholded Image", kmeansImage);
-    imshow("Cleaned Image", cleanedImage);
-    imshow("Initial Segmentation", coloredMap);
-    imshow("Filtered Segmentation", filteredColoredMap);
+    
+    
+    namedWindow("Feature Visualization", WINDOW_AUTOSIZE); // Additional window for feature visualization    
     imshow("Feature Visualization", src); // Show src again with features overlaid
 
     cout << "Press 't' or 'T' to enter training mode and label the current object." << endl;
@@ -92,7 +100,7 @@ int main() {
 
         // Assuming you've identified a regionID to compute features for
         int regionID = 1; // Placeholder: adapt this to your method of selecting a region
-        RegionFeatures features = computeRegionFeatures(cleanedImage, regionID, src);
+        RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID);
 
         // Save the feature vector and label to a file
         if (saveFeatureVectorToFile(features, label, "training_data.csv")) {

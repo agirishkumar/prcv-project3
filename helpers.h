@@ -3,6 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 using namespace cv;
+using namespace std;
 
 // Preprocesses an input image by converting it to grayscale and applying a contrast-limited adaptive histogram equalization (CLAHE).
 // Parameters:
@@ -107,17 +108,39 @@ struct RegionFeatures {
     float boundingBoxAspectRatio;
     cv::Point2f centroid; 
     cv::Mat colorHistogram;
+    double theta;
+    double mainAxisMoment;
+    double secondAxisMoment;
 };
+
+struct Coordinate{
+        double x, y;
+    };
+
+    struct AABB{
+        Coordinate min, max;
+    };
+
+    struct OBB{
+        Coordinate a, b, c, d;
+    };
 
 // Function declaration
 RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int regionID, const cv::Mat& originalImage) ;
 
 
 // Function to display computed features on the image
-void displayRegionFeatures(cv::Mat &image, const cv::Mat &regionMap, int regionID, const RegionFeatures &features);
+// void displayRegionFeatures(cv::Mat &image, const cv::Mat &regionMap, int regionID, const RegionFeatures &features);
 
 
 bool saveFeatureVectorToFile(const RegionFeatures& features, const std::string& label, const std::string& filename);
 
+RegionFeatures computeRegionFeatures(Mat &regionMap, int targetID);
+
+int drawObb(Mat &image, vector<Coordinate> obb);
+
+int drawAxis(Mat &image, double theta, int centroidX, int centroidY);
+
+vector<Coordinate> calculateOrientedBoundingBox(Mat &regionMap, int targetID, double orientation, float centroidX, float centroidY);
 
 #endif // MHELPERS_H
