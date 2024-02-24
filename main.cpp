@@ -61,7 +61,8 @@ int main() {
     // Assuming you have defined computeRegionFeatures and displayRegionFeatures functions
     for (int regionID = 1; regionID <= filteredRegionCount; ++regionID) {
         RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID);
-        displayRegionFeatures(src, filteredRegionMap, regionID, features);
+        drawObb(src, calculateOrientedBoundingBox(filteredRegionMap, regionID, features.theta, features.centroid.x, features.centroid.y));
+        //displayRegionFeatures(src, filteredRegionMap, regionID, features);
     }
 
     namedWindow("Original Image", WINDOW_AUTOSIZE);

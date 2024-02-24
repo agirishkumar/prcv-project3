@@ -771,7 +771,7 @@ Coordinate rotatePoint(Coordinate &p, double theta){
         Point2f centroid(centroidX, centroidY);
 
         // TODO: chage histogram to actual
-        return {(float)percentFilled, (float)heightWidthRatio, centroid, regionMap, u20, u02};
+        return {(float)percentFilled, (float)heightWidthRatio, centroid, regionMap, theta_radians, u20, u02};
     }
 
 
