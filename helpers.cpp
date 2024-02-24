@@ -572,17 +572,34 @@ RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int regionID, con
  *
  * @throws None
  */
-void displayRegionFeatures(Mat& image, const Mat& regionMap, int regionID, const RegionFeatures& features) {
+// void displayRegionFeatures(Mat& image, const Mat& regionMap, int regionID, const RegionFeatures& features) {
 
-    // Mat invertedRegionMap;
-    // bitwise_not(regionMap, invertedRegionMap);
+//     // Mat invertedRegionMap;
+//     // bitwise_not(regionMap, invertedRegionMap);
 
-    Mat region = regionMap == regionID;
-    Rect boundingBox = boundingRect(region);
-    rectangle(image, boundingBox, Scalar(0, 255, 0), 2);
-    string text = "Fill: " + to_string(features.percentFilled) + ", Aspect: " + to_string(features.boundingBoxAspectRatio);
-    putText(image, text, boundingBox.tl(), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
-}
+//     Mat region = regionMap == regionID;
+//     Rect boundingBox = boundingRect(region);
+//     rectangle(image, boundingBox, Scalar(0, 255, 0), 2);
+//     string text = "Fill: " + to_string(features.percentFilled) + ", Aspect: " + to_string(features.boundingBoxAspectRatio);
+//     putText(image, text, boundingBox.tl(), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
+// }
+
+// void displayRegionFeatures(Mat& image, const Mat& regionMap, int regionID, const RegionFeatures& features) {
+//     Mat region = regionMap == regionID;
+//     Rect boundingBox = boundingRect(region);
+
+//     // Create the text to display. Include the region ID.
+//     string text = "ID: " + to_string(regionID) + 
+//                   " Fill: " + to_string(features.percentFilled) + 
+//                   ", Aspect: " + to_string(features.boundingBoxAspectRatio);
+
+//     // Define the bottom-left corner of the text based on the bounding box
+//     Point textOrg(boundingBox.x, boundingBox.y + boundingBox.height + 20); // Move the text below the bounding box
+
+//     // Draw the bounding box and put the text
+//     rectangle(image, boundingBox, Scalar(0, 255, 0), 2);
+//     putText(image, text, textOrg, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
+// }
 
 
 bool saveFeatureVectorToFile(const RegionFeatures& features, const std::string& label, const std::string& filename) {
@@ -788,7 +805,7 @@ Coordinate rotatePoint(Coordinate &p, double theta){
         return 0;
     }
 
-    //draws the oriented Bounding box
+    // draws the oriented Bounding box
     int drawObb(Mat &image, vector<Coordinate> obb){
         if (obb.size() != 4) {
             cerr << "Error: OBB must contain exactly 4 points." << endl;
@@ -811,6 +828,8 @@ Coordinate rotatePoint(Coordinate &p, double theta){
         line(image, d, a, cv::Scalar(255, 0, 0), 2);
         return 0;
     }
+
+    
 
 
 

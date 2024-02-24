@@ -130,7 +130,7 @@ RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int regionID, con
 
 
 // Function to display computed features on the image
-void displayRegionFeatures(cv::Mat &image, const cv::Mat &regionMap, int regionID, const RegionFeatures &features);
+// void displayRegionFeatures(cv::Mat &image, const cv::Mat &regionMap, int regionID, const RegionFeatures &features);
 
 
 bool saveFeatureVectorToFile(const RegionFeatures& features, const std::string& label, const std::string& filename);
