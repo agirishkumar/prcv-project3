@@ -622,5 +622,197 @@ bool saveFeatureVectorToFile(const RegionFeatures& features, const std::string& 
 }
 
 
+Coordinate rotatePoint(Coordinate &p, double theta){
+        return {
+            p.x * cos(theta) - p.y * sin(theta),
+            p.x * sin(theta) + p.y * cos(theta)
+        };
+    }
+
+//calculates central moments.
+    tuple<float, float, float> calculateCentralMoment(vector<Coordinate> pixels, float centroidX, float centroidY, int orderMomentX, int orederMonentY){
+        float moment02 = 0;
+        float moment20 = 0;
+        float moment11 = 0;
+        for(int i = 0; i < pixels.size(); i++){
+            Coordinate pixel = pixels[i];
+            float differenceX = pixel.x - centroidX;
+            float differenceY = pixel.y - centroidY;
+            moment02 +=  differenceY *  differenceY;
+            moment20 += differenceX * differenceX;
+            moment11 += differenceX * differenceY;
+        }
+        return make_tuple(moment20, moment02, moment11);
+    }
+
+    AABB boundingBox(vector<Coordinate> &pixels){
+        AABB box;
+        box.max.x = numeric_limits<double>::lowest(); // Use lowest possible value for max initialization
+        box.max.y = numeric_limits<double>::lowest();
+        box.min.x = numeric_limits<double>::max(); // Use max value for min initialization
+        box.min.y = numeric_limits<double>::max();
+        for (auto &pixel : pixels) {
+            // Correctly update the bounding box coordinates
+            if (pixel.x > box.max.x) box.max.x = pixel.x;
+            if (pixel.y > box.max.y) box.max.y = pixel.y;
+            if (pixel.x < box.min.x) box.min.x = pixel.x; 
+            if (pixel.y < box.min.y) box.min.y = pixel.y;
+        }
+        cout << "aabb" << "\n";
+        cout << box.max.x << " " << box.max.y << "\n";
+        cout << box.min.x << " " << box.min.y << "\n";
+        return box;
+    }
+
+    //Finds axis aligned bounding box
+    AABB findAABB(vector<Coordinate> &pixels, double orientation, float centroidX, float centroidY){
+        vector<Coordinate> rotatedPoints;
+        for(auto &pixel : pixels){
+            Coordinate translated = {pixel.x - centroidX, pixel.y - centroidY};
+            rotatedPoints.push_back(rotatePoint(translated, -orientation));
+        }
+        AABB aabb = boundingBox(rotatedPoints);
+        return aabb;
+    }
+    // finds the oriented bounding box
+    vector<Coordinate> calculateOrientedBoundingBox(Mat &regionMap, int targetID, double orientation, float centroidX, float centroidY){
+        vector<Coordinate> pixels;
+        // centroidX = 0;
+        // centroidY = 0;
+        int count = 0;
+        for (int i = 0; i < regionMap.rows; i++) {
+            for (int j = 0; j < regionMap.cols; j++) {
+                int regionId = regionMap.ptr<uchar>(i)[j];
+                if(regionId == targetID){
+                    Coordinate c = {static_cast<double>(j), static_cast<double>(i)};
+                    pixels.push_back(c);
+                    // centroidX += j;
+                    // centroidY += i;
+                    // count++;
+                }
+            }
+            
+        }
+        cout << "LOL: " << orientation << " " << centroidX << " " << centroidY;
+        // centroidX /= count;
+        // centroidY /= count;
+
+        AABB aabb = findAABB(pixels, orientation, centroidX, centroidY);
+
+        vector<Coordinate> corners = {
+            {aabb.min.x, aabb.min.y},
+            {aabb.max.x, aabb.min.y},
+            {aabb.max.x, aabb.max.y},
+            {aabb.min.x, aabb.max.y}
+        };
+        
+        vector<Coordinate> obb;
+        for (Coordinate& corner : corners) {
+            cout << corner.x << " " << corner.y;
+            Coordinate rotatedBack = rotatePoint(corner, orientation); // Rotate back
+            Coordinate originalPosition = {rotatedBack.x + centroidX, rotatedBack.y + centroidY}; // Translate back
+            obb.push_back(originalPosition);
+        }
+        return obb;
+    }
+
+    
+    double boxFilledPercentage(AABB &aabb, int pixelCount){
+        cout << aabb.max.x << " " << aabb.max.y << " " << aabb.min.x << " " << aabb.min.y;
+        double area = (aabb.max.x - aabb.min.x) * (aabb.max.y - aabb.min.y);
+        return (double)pixelCount / area * 100.0;
+    }
+
+    tuple<double, double> computeInertia(double theta, double moment20, double moment02, double moment11){
+        double u20 = moment20 * cos(theta) * cos(theta) + moment02 * sin(theta) * sin(theta) + moment11 * sin(2*theta);
+        double u02 = moment20 * sin(theta) * sin(theta) + moment02 * cos(theta) * cos(theta) - moment11 * sin(2*theta);
+        return make_tuple(u20, u02);
+    }
+
+    RegionFeatures computeRegionFeatures(Mat &regionMap, int targetID){
+        float centroidX = 0;
+        float centroidY = 0;
+        int count = 0;
+        vector<Coordinate> regionPixels;
+        for (int i = 0; i < regionMap.rows; i++) {
+            for (int j = 0; j < regionMap.cols; j++) {
+                int regionId = regionMap.ptr<uchar>(i)[j];
+                if(regionId == targetID){
+                    Coordinate c = {(double)j, (double)i};
+                    regionPixels.push_back(c);
+                    centroidX += j;
+                    centroidY += i;
+                    count++;
+                }
+            }
+        }
+        if (count != 0){
+            centroidX /= count;
+            centroidY /= count;
+        }
+
+        float m20, m02, m11;
+        tie(m20, m02, m11) = calculateCentralMoment(regionPixels, centroidX, centroidY, 0, 0);
+
+        double theta_radians = 0.5 * atan2(2*m11, m20 - m02);
+        double theta_degrees = theta_radians * (180.0 / M_PI);
+
+        cout << " rad " << theta_radians << "\n";
+        AABB aabb = findAABB(regionPixels, theta_radians, centroidX, centroidY);
+
+        double percentFilled = boxFilledPercentage(aabb, regionPixels.size());
+        double heightWidthRatio = (aabb.max.x - aabb.min.x) / (aabb.max.y - aabb.min.y);
+
+        double u20, u02;
+        tie(u20, u02) = computeInertia(theta_radians, m20, m02, m11);
+
+
+        cout << "perc filled " << percentFilled;
+        Point2f centroid(centroidX, centroidY);
+
+        // TODO: chage histogram to actual
+        return {(float)percentFilled, (float)heightWidthRatio, centroid, regionMap, u20, u02};
+    }
+
+
+    //draws the principal axis.
+    int drawAxis(Mat &image, double theta, int centroidX, int centroidY){
+        double L = 100; 
+
+        // Calculate axis endpoints
+        Point pt1(centroidX + L/2 * cos(theta), centroidY + L/2 * sin(theta));
+        Point pt2(centroidX - L/2 * cos(theta), centroidY - L/2 * sin(theta));
+
+        // Draw the line on the image
+        line(image, pt1, pt2, cv::Scalar(0, 0, 255), 2);
+        return 0;
+    }
+
+    //draws the oriented Bounding box
+    int drawObb(Mat &image, vector<Coordinate> obb){
+        if (obb.size() != 4) {
+            cerr << "Error: OBB must contain exactly 4 points." << endl;
+            return -1; 
+        }
+
+        Point a(obb[0].x, obb[0].y); 
+        Point b(obb[1].x, obb[1].y); 
+        Point c(obb[2].x, obb[2].y);
+        Point d(obb[3].x, obb[3].y);
+        cout << "obb" << "\n";
+        cout << obb[0].x << " " << obb[0].y << "\n";
+        cout << obb[1].x << " " << obb[1].y << "\n";
+        cout << obb[2].x << " " << obb[2].y << "\n";
+        cout << obb[3].x << " " << obb[3].y << "\n";
+        // Draw the line on the image
+        line(image, a, b, Scalar(255, 0, 0), 2);
+        line(image, b, c, cv::Scalar(255, 0, 0), 2);
+        line(image, c, d, cv::Scalar(255, 0, 0), 2);
+        line(image, d, a, cv::Scalar(255, 0, 0), 2);
+        return 0;
+    }
+
+
+
 
 

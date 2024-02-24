@@ -60,7 +60,7 @@ int main() {
     // Compute and display features for each major region
     // Assuming you have defined computeRegionFeatures and displayRegionFeatures functions
     for (int regionID = 1; regionID <= filteredRegionCount; ++regionID) {
-        RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID, src);
+        RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID);
         displayRegionFeatures(src, filteredRegionMap, regionID, features);
     }
 
@@ -92,7 +92,7 @@ int main() {
 
         // Assuming you've identified a regionID to compute features for
         int regionID = 1; // Placeholder: adapt this to your method of selecting a region
-        RegionFeatures features = computeRegionFeatures(cleanedImage, regionID, src);
+        RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID);
 
         // Save the feature vector and label to a file
         if (saveFeatureVectorToFile(features, label, "training_data.csv")) {
