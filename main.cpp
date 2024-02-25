@@ -9,108 +9,111 @@ using namespace cv;
 int main() {
     cout << "Starting the image processing application..." << endl;
 
-    Mat src = imread("sample3.jpg");
-    if (src.empty()) {
-        cerr << "Error: Image not found." << endl;
+    VideoCapture cap(2); 
+    if (!cap.isOpened()) {
+        cerr << "Error: Cannot open the webcam stream." << endl;
         return -1;
     }
 
-    namedWindow("Original Image", WINDOW_AUTOSIZE);
-    imshow("Original Image", src);
-
-    Mat preprocessedImg, binaryImage, kmeansImage, cleanedImage;
-
-    // Preprocess the image
-    if (preprocessImg(src, preprocessedImg) != 0) {
-        cerr << "Error during image preprocessing." << endl;
-        return -1;
-    }
-
-    namedWindow("Preprocessed Image", WINDOW_AUTOSIZE);
-    imshow("Preprocessed Image", preprocessedImg);
-  
-    // Apply binary thresholding
-    if (binaryThresholding(preprocessedImg, binaryImage) != 0) {
-        cerr << "Error during binary thresholding." << endl;
-        return -1;
-    }
-
-    namedWindow("Binary thresholded Image", WINDOW_AUTOSIZE);
-    imshow("Binary thresholded Image", binaryImage);
-  
-    // Apply k-means thresholding
-    if (kmeansThresholding(preprocessedImg, kmeansImage) != 0) {
-        cerr << "Error during K-means thresholding." << endl;
-        return -1;
-    }
-
-    namedWindow("Kmeans thresholded Image", WINDOW_AUTOSIZE);
-    imshow("Kmeans thresholded Image", kmeansImage);
-  
-    cleanThresholdedImage(kmeansImage, cleanedImage);
-
-    namedWindow("Cleaned Image", WINDOW_AUTOSIZE);
-    imshow("Cleaned Image", cleanedImage);
-
-    // Apply region growing on the cleaned, thresholded image
-    Mat regionMap;
-    int regionCount = regionGrowing(cleanedImage, regionMap);
-    cout << "Region count before filtering: " << regionCount << endl;
-
-    // Visualize initial segmentation
-    Mat coloredMap = regionColor(regionMap);
-
-    namedWindow("Initial Segmentation", WINDOW_AUTOSIZE);
-    imshow("Initial Segmentation", coloredMap);
-
-    // Filter out small regions and visualize the result
-    Mat filteredRegionMap = removeSmallRegions(regionMap, 200); // Adjust the size threshold as needed
-
-    // Count and print the region count after filtering
-    double minVal, maxVal;
-    minMaxLoc(filteredRegionMap, &minVal, &maxVal); // Finds the min and max pixel values and their positions
-    int filteredRegionCount = static_cast<int>(maxVal);
-    cout << "Region count after filtering: " << filteredRegionCount << endl;
-
-    // Visualize the filtered segmentation
-    Mat filteredColoredMap = regionColor(filteredRegionMap);
-
-    namedWindow("Filtered Segmentation", WINDOW_AUTOSIZE);
-    imshow("Filtered Segmentation", filteredColoredMap);
-
-    // Compute and display features for each major region
-    // Assuming you have defined computeRegionFeatures and displayRegionFeatures functions
-    for (int regionID = 1; regionID <= filteredRegionCount; ++regionID) {
-        RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID);
-        drawObb(src, calculateOrientedBoundingBox(filteredRegionMap, regionID, features.theta, features.centroid.x, features.centroid.y));
-    }
+    // Create a window to display the video
+    namedWindow("Live Feed", WINDOW_AUTOSIZE);
 
     
-    
-    namedWindow("Feature Visualization", WINDOW_AUTOSIZE); // Additional window for feature visualization    
-    imshow("Feature Visualization", src); // Show src again with features overlaid
+    while (true) {
+        Mat frame;
+        cap >> frame;
+        if (frame.empty()) break;
 
-    cout << "Press 't' or 'T' to enter training mode and label the current object." << endl;
+        imshow("Live Feed", frame);
 
-    char key = waitKey(0); // Wait for a key press
-    if (key == 't' || key == 'T') {
-        cout << "Training mode activated. Enter label for the current object: ";
-        string label;
-        cin >> label; // Get label from the user
+        Mat preprocessedImg, kmeansImage, cleanedImage, featureVisualization;
 
-        // Assuming you've identified a regionID to compute features for
-        int regionID = 1; // Placeholder: adapt this to your method of selecting a region
-        RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID);
-
-        // Save the feature vector and label to a file
-        if (saveFeatureVectorToFile(features, label, "training_data.csv")) {
-            cout << "Training data saved successfully." << endl;
-        } else {
-            cerr << "Error saving training data." << endl;
+        // Preprocess the image
+        if (preprocessImg(frame, preprocessedImg) != 0) {
+            cerr << "Error during image preprocessing." << endl;
+            return -1;
         }
-    } else {
-        cout << "Continuing without entering training mode." << endl;
+
+        imshow("Preprocessed Video", preprocessedImg);
+
+        // Apply k-means thresholding
+        if (kmeansThresholding(preprocessedImg, kmeansImage) != 0) {
+            cerr << "Error during K-means thresholding." << endl;
+            return -1;
+        }
+
+        imshow("Kmeans Thresholded Video", kmeansImage);
+
+        // Clean the thresholded image
+        cleanThresholdedImage(kmeansImage, cleanedImage);
+
+        imshow("Cleaned Thresholded Video", cleanedImage);
+
+
+        // Apply region growing on the cleaned, thresholded image
+        Mat regionMap;
+        int regionCount = regionGrowing(cleanedImage, regionMap);
+        // cout << "Region count before filtering: " << regionCount << endl;
+
+        // Visualize initial segmentation
+        Mat coloredMap = regionColor(regionMap);
+
+        namedWindow("Initial Segmentation", WINDOW_AUTOSIZE);
+        imshow("Initial Segmentation", coloredMap);
+
+        // Filter out small regions and visualize the result
+        Mat filteredRegionMap = removeSmallRegions(regionMap, 200); // Adjust the size threshold as needed
+
+        // Count and print the region count after filtering
+        double minVal, maxVal;
+        minMaxLoc(filteredRegionMap, &minVal, &maxVal); // Finds the min and max pixel values and their positions
+        int filteredRegionCount = static_cast<int>(maxVal);
+        // cout << "Region count after filtering: " << filteredRegionCount << endl;
+
+        // Visualize the filtered segmentation
+        Mat filteredColoredMap = regionColor(filteredRegionMap);
+
+        namedWindow("Filtered Segmentation", WINDOW_AUTOSIZE);
+        imshow("Filtered Segmentation", filteredColoredMap);
+
+        // Compute and display features for each major region
+        for (int regionID = 1; regionID <= filteredRegionCount; ++regionID) {
+            RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID);
+            cout << "area: "<< features.area << endl;
+            if (features.area > 5000) {
+        drawObb(frame, calculateOrientedBoundingBox(filteredRegionMap, regionID, features.theta, features.centroid.x, features.centroid.y));
+            }
+            
+        }
+
+        
+        
+        namedWindow("Feature Visualization", WINDOW_AUTOSIZE); // Additional window for feature visualization    
+        imshow("Feature Visualization", frame); // Show src again with features overlaid
+
+
+        // Wait for 'N' key press to trigger feature extraction and saving
+        char key = (char)waitKey(1); // Wait for a key press
+        if (key == 'n' || key == 'N') {
+            string label;
+            cout << "Enter label for the current object: ";
+            cin >> label; // Get label from the user
+
+            // Assume regionID 1 is of interest for simplicity, adjust according to your application
+            RegionFeatures features = computeRegionFeatures(filteredRegionMap, 1);
+            saveFeatureVectorToFile(features, label, "database.csv");
+
+            cout << "Feature vector saved successfully." << endl;
+        } else if (key == 27 || key == 'q') { // ESC or 'q' key to exit
+            break;
+        }      
+
     }
+
+    cap.release();
+    destroyAllWindows();
+    
 
     return 0;
 }
+

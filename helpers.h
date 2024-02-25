@@ -107,10 +107,10 @@ struct RegionFeatures {
     float percentFilled;
     float boundingBoxAspectRatio;
     cv::Point2f centroid; 
-    cv::Mat colorHistogram;
     double theta;
     double mainAxisMoment;
     double secondAxisMoment;
+    float area;
 };
 
 struct Coordinate{
@@ -126,7 +126,7 @@ struct Coordinate{
     };
 
 // Function declaration
-RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int regionID, const cv::Mat& originalImage) ;
+// RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int regionID, const cv::Mat& originalImage) ;
 
 
 // Function to display computed features on the image
