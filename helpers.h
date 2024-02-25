@@ -107,9 +107,9 @@ struct RegionFeatures {
     float percentFilled;
     float boundingBoxAspectRatio;
     cv::Point2f centroid; 
-    double theta;
-    double mainAxisMoment;
-    double secondAxisMoment;
+    float theta;
+    float mainAxisMoment;
+    float secondAxisMoment;
     float area;
 };
 
@@ -135,12 +135,36 @@ struct Coordinate{
 
 bool saveFeatureVectorToFile(const RegionFeatures& features, const std::string& label, const std::string& filename);
 
-RegionFeatures computeRegionFeatures(Mat &regionMap, int targetID);
+RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int targetID);
 
 int drawObb(Mat &image, vector<Coordinate> obb);
 
 int drawAxis(Mat &image, double theta, int centroidX, int centroidY);
 
 vector<Coordinate> calculateOrientedBoundingBox(Mat &regionMap, int targetID, double orientation, float centroidX, float centroidY);
+
+struct DatabaseEntry {
+    std::vector<float> features; // You can adjust the types and number of features based on your application
+    std::string label;
+};
+
+std::map<int, DatabaseEntry> loadDatabase(const std::string& filename);
+
+void detectAndLabelRegions(cv::Mat& image, const cv::Mat& regionMap, const std::string& databasePath);
+
+std::map<int, DatabaseEntry> loadDatabase(const std::string& filename);
+
+
+float calculateEuclideanDistance(const std::vector<float>& vec1, const std::vector<float>& vec2);
+
+void detectAndLabelRegions(cv::Mat& image, const cv::Mat& regionMap, const std::string& databaseFilename);
+
+std::string compareWithDatabase(const std::map<int, DatabaseEntry>& database, const std::vector<float>& features, const std::vector<float>& stdDev, float& minDistance);
+
+std::vector<float> calculateStandardDeviations(const std::vector<std::vector<float>>& featureVectors);
+
+float calculateScaledEuclideanDistance(const std::vector<float>& vec1, const std::vector<float>& vec2, const std::vector<float>& stdDev);
+
+std::vector<std::vector<float>> loadFeatureVectors(const std::string& filename);
 
 #endif // MHELPERS_H
