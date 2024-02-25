@@ -3,13 +3,15 @@
 #include <iostream>
 #include "helpers.h"
 #include <vector>
-#include <vector>
 #include <cstdlib>
 #include <ctime>
 #include <numeric>
 #include <stack>
 #include <fstream>
 #include <limits>
+#include <map>
+#include <string>
+#include <sstream>
 
 using namespace cv;
 using namespace std;
@@ -496,7 +498,7 @@ bool saveFeatureVectorToFile(const RegionFeatures& features, const std::string& 
 }
 
 
-Coordinate rotatePoint(Coordinate &p, double theta){
+Coordinate rotatePoint(Coordinate &p, float theta){
         return {
             p.x * cos(theta) - p.y * sin(theta),
             p.x * sin(theta) + p.y * cos(theta)
@@ -521,10 +523,10 @@ Coordinate rotatePoint(Coordinate &p, double theta){
 
     AABB boundingBox(vector<Coordinate> &pixels){
         AABB box;
-        box.max.x = numeric_limits<double>::lowest(); // Use lowest possible value for max initialization
-        box.max.y = numeric_limits<double>::lowest();
-        box.min.x = numeric_limits<double>::max(); // Use max value for min initialization
-        box.min.y = numeric_limits<double>::max();
+        box.max.x = numeric_limits<float>::lowest(); // Use lowest possible value for max initialization
+        box.max.y = numeric_limits<float>::lowest();
+        box.min.x = numeric_limits<float>::max(); // Use max value for min initialization
+        box.min.y = numeric_limits<float>::max();
         for (auto &pixel : pixels) {
             // Correctly update the bounding box coordinates
             if (pixel.x > box.max.x) box.max.x = pixel.x;
@@ -532,14 +534,14 @@ Coordinate rotatePoint(Coordinate &p, double theta){
             if (pixel.x < box.min.x) box.min.x = pixel.x; 
             if (pixel.y < box.min.y) box.min.y = pixel.y;
         }
-        cout << "aabb" << "\n";
-        cout << box.max.x << " " << box.max.y << "\n";
-        cout << box.min.x << " " << box.min.y << "\n";
+        // cout << "aabb" << "\n";
+        // cout << box.max.x << " " << box.max.y << "\n";
+        // cout << box.min.x << " " << box.min.y << "\n";
         return box;
     }
 
     //Finds axis aligned bounding box
-    AABB findAABB(vector<Coordinate> &pixels, double orientation, float centroidX, float centroidY){
+    AABB findAABB(vector<Coordinate> &pixels, float orientation, float centroidX, float centroidY){
         vector<Coordinate> rotatedPoints;
         for(auto &pixel : pixels){
             Coordinate translated = {pixel.x - centroidX, pixel.y - centroidY};
@@ -567,7 +569,7 @@ Coordinate rotatePoint(Coordinate &p, double theta){
             }
             
         }
-        cout << "LOL: " << orientation << " " << centroidX << " " << centroidY;
+        // cout << "LOL: " << orientation << " " << centroidX << " " << centroidY;
         // centroidX /= count;
         // centroidY /= count;
 
@@ -582,7 +584,7 @@ Coordinate rotatePoint(Coordinate &p, double theta){
         
         vector<Coordinate> obb;
         for (Coordinate& corner : corners) {
-            cout << corner.x << " " << corner.y;
+            // cout << corner.x << " " << corner.y;
             Coordinate rotatedBack = rotatePoint(corner, orientation); // Rotate back
             Coordinate originalPosition = {rotatedBack.x + centroidX, rotatedBack.y + centroidY}; // Translate back
             obb.push_back(originalPosition);
@@ -591,19 +593,19 @@ Coordinate rotatePoint(Coordinate &p, double theta){
     }
 
     
-    double boxFilledPercentage(AABB &aabb, int pixelCount){
-        cout << aabb.max.x << " " << aabb.max.y << " " << aabb.min.x << " " << aabb.min.y;
-        double area = (aabb.max.x - aabb.min.x) * (aabb.max.y - aabb.min.y);
-        return (double)pixelCount / area * 100.0;
+    float boxFilledPercentage(AABB &aabb, int pixelCount){
+        // cout << aabb.max.x << " " << aabb.max.y << " " << aabb.min.x << " " << aabb.min.y;
+        float area = (aabb.max.x - aabb.min.x) * (aabb.max.y - aabb.min.y);
+        return (float)pixelCount / area * 100.0;
     }
 
-    tuple<double, double> computeInertia(double theta, double moment20, double moment02, double moment11){
-        double u20 = moment20 * cos(theta) * cos(theta) + moment02 * sin(theta) * sin(theta) + moment11 * sin(2*theta);
-        double u02 = moment20 * sin(theta) * sin(theta) + moment02 * cos(theta) * cos(theta) - moment11 * sin(2*theta);
+    tuple<float, float> computeInertia(float theta, float moment20, float moment02, float moment11){
+        float u20 = moment20 * cos(theta) * cos(theta) + moment02 * sin(theta) * sin(theta) + moment11 * sin(2*theta);
+        float u02 = moment20 * sin(theta) * sin(theta) + moment02 * cos(theta) * cos(theta) - moment11 * sin(2*theta);
         return make_tuple(u20, u02);
     }
 
-    RegionFeatures computeRegionFeatures(Mat &regionMap, int targetID) {
+    RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int targetID) {
         float centroidX = 0;
         float centroidY = 0;
         int count = 0;
@@ -632,20 +634,20 @@ Coordinate rotatePoint(Coordinate &p, double theta){
         float m20, m02, m11;
         tie(m20, m02, m11) = calculateCentralMoment(regionPixels, centroidX, centroidY, 0, 0);
 
-        double theta_radians = 0.5 * atan2(2*m11, m20 - m02);
-        double theta_degrees = theta_radians * (180.0 / M_PI);
+        float theta_radians = 0.5 * atan2(2*m11, m20 - m02);
+        float theta_degrees = theta_radians * (180.0 / M_PI);
 
-        cout << " rad " << theta_radians << "\n";
+        // cout << " rad " << theta_radians << "\n";
         AABB aabb = findAABB(regionPixels, theta_radians, centroidX, centroidY);
 
-        double percentFilled = boxFilledPercentage(aabb, regionPixels.size());
-        double heightWidthRatio = (aabb.max.x - aabb.min.x) / (aabb.max.y - aabb.min.y);
+        float percentFilled = boxFilledPercentage(aabb, regionPixels.size());
+        float heightWidthRatio = (aabb.max.x - aabb.min.x) / (aabb.max.y - aabb.min.y);
 
-        double u20, u02;
+        float u20, u02;
         tie(u20, u02) = computeInertia(theta_radians, m20, m02, m11);
 
 
-        cout << "perc filled " << percentFilled;
+        // cout << "perc filled " << percentFilled;
         Point2f centroid(centroidX, centroidY);
 
         
@@ -689,3 +691,170 @@ Coordinate rotatePoint(Coordinate &p, double theta){
         line(image, d, a, cv::Scalar(255, 0, 0), 2);
         return 0;
     }
+
+
+
+float calculateEuclideanDistance(const std::vector<float>& vec1, const std::vector<float>& vec2) {
+    float distance = 0.0;
+    for (size_t i = 0; i < vec1.size(); i++) {
+        distance += (vec1[i] - vec2[i]) * (vec1[i] - vec2[i]);
+    }
+    return sqrt(distance);
+}
+
+
+float calculateScaledEuclideanDistance(const std::vector<float>& vec1, const std::vector<float>& vec2, const std::vector<float>& stdDev) {
+    float distance = 0.0;
+    for (size_t i = 0; i < vec1.size(); i++) {
+        float scale = (stdDev[i] != 0) ? stdDev[i] : 1.0f; // Avoid division by zero
+        distance += std::pow((vec1[i] - vec2[i]) / scale, 2);
+    }
+    return std::sqrt(distance);
+}
+
+std::string compareWithDatabase(const std::map<int, DatabaseEntry>& database, const std::vector<float>& features, const std::vector<float>& stdDev, float& minDistance) {
+    std::string closestLabel = "Unknown";
+    minDistance = std::numeric_limits<float>::max();
+
+    for (const auto& entry : database) {
+        float distance = calculateScaledEuclideanDistance(entry.second.features, features, stdDev);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestLabel = entry.second.label;
+            cout << "min distance: " << minDistance << "\n";
+            cout << "closest label: " << closestLabel << "\n";
+        }
+    }
+
+    return closestLabel;
+}
+
+
+std::map<int, DatabaseEntry> loadDatabase(const std::string& filename) {
+    std::map<int, DatabaseEntry> database;
+    std::ifstream file(filename);
+    std::string line;
+    int id = 0; 
+
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        std::string label;
+        std::getline(iss, label, ',');
+        
+        DatabaseEntry entry;
+        entry.label = label;
+        
+        float feature;
+        while (iss >> feature) {
+            entry.features.push_back(feature);
+            if (iss.peek() == ',') iss.ignore();
+        }
+
+        database[id++] = entry;
+    }
+
+    return database;
+}
+
+std::vector<std::vector<float>> loadFeatureVectors(const std::string& filename) {
+    std::vector<std::vector<float>> featureVectors;
+    std::ifstream file(filename);
+    std::string line;
+
+    while (getline(file, line)) {
+        std::vector<float> featureVector;
+        std::stringstream ss(line);
+        std::string value;
+        getline(ss, value, ','); // Skip the label
+
+        while (getline(ss, value, ',')) {
+            featureVector.push_back(std::stof(value));
+        }
+
+        featureVectors.push_back(featureVector);
+    }
+
+    return featureVectors;
+}
+
+
+
+void detectAndLabelRegions(cv::Mat& image, const cv::Mat& regionMap, const std::string& databaseFilename) {
+    auto database = loadDatabase(databaseFilename);
+    auto featureVectors = loadFeatureVectors(databaseFilename); // Assuming features are in the same file
+    auto stdDev = calculateStandardDeviations(featureVectors);
+
+    // Print the standard deviations
+    // std::cout << "Standard Deviations:" << std::endl;
+    // for (size_t i = 0; i < stdDev.size(); ++i) {
+    //     std::cout << "Feature " << i + 1 << ": " << stdDev[i] << std::endl;
+    // }
+
+
+    double minVal, maxVal;
+    cv::minMaxLoc(regionMap, &minVal, &maxVal);
+    int maxRegionID = static_cast<int>(maxVal);
+
+    for (int regionID = 1; regionID <= maxRegionID; ++regionID) {
+        RegionFeatures features = computeRegionFeatures(regionMap, regionID); // Implement this based on your application
+
+        std::vector<float> featureVector = {
+            features.percentFilled, 
+            features.boundingBoxAspectRatio, 
+            features.centroid.x, 
+            features.centroid.y, 
+            features.theta, 
+            features.mainAxisMoment, 
+            features.secondAxisMoment, 
+            features.area
+        };
+
+        float minDistance;
+        std::string label = compareWithDatabase(database, featureVector, stdDev, minDistance);
+
+        cout << "label: " << label << endl;
+        cout << "minDistance: " << minDistance << endl;
+
+        cv::Point labelPos(features.centroid.x, features.centroid.y);
+        if (minDistance <= 15 ) {
+            cv::putText(image, label, labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+        } else {
+            cv::putText(image, "Unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
+        }
+    }
+}
+
+
+
+std::vector<float> calculateStandardDeviations(const std::vector<std::vector<float>>& featureVectors) {
+    std::vector<float> means(featureVectors[0].size(), 0.0f);
+    for (const auto& vector : featureVectors) {
+        for (size_t i = 0; i < vector.size(); ++i) {
+            means[i] += vector[i];
+        }
+    }
+    for (float& mean : means) {
+        mean /= featureVectors.size();
+    }
+
+    std::vector<float> variances(means.size(), 0.0f);
+    for (const auto& vector : featureVectors) {
+        for (size_t i = 0; i < vector.size(); ++i) {
+            variances[i] += std::pow(vector[i] - means[i], 2);
+        }
+    }
+    for (float& variance : variances) {
+        variance /= featureVectors.size();
+    }
+
+    std::vector<float> standardDeviations;
+    for (const float variance : variances) {
+        standardDeviations.push_back(std::sqrt(variance));
+    }
+
+    return standardDeviations;
+}
+
+
+
+
