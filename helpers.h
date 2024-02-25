@@ -143,4 +143,15 @@ int drawAxis(Mat &image, double theta, int centroidX, int centroidY);
 
 vector<Coordinate> calculateOrientedBoundingBox(Mat &regionMap, int targetID, double orientation, float centroidX, float centroidY);
 
+/**
+     * Draws features and label of a given object.
+     * @param image - image to draw features.
+     * @param regionName - region label name.
+     * @param features - the region features.
+     * @param obb - the oriented bounding box of the region.
+     * @return int 0 if succesfully executed.
+    */
+    int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector<Coordinate> obb);
+
+
 #endif // MHELPERS_H

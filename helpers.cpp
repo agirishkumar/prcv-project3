@@ -532,9 +532,9 @@ Coordinate rotatePoint(Coordinate &p, double theta){
             if (pixel.x < box.min.x) box.min.x = pixel.x; 
             if (pixel.y < box.min.y) box.min.y = pixel.y;
         }
-        cout << "aabb" << "\n";
-        cout << box.max.x << " " << box.max.y << "\n";
-        cout << box.min.x << " " << box.min.y << "\n";
+        // cout << "aabb" << "\n";
+        // cout << box.max.x << " " << box.max.y << "\n";
+        // cout << box.min.x << " " << box.min.y << "\n";
         return box;
     }
 
@@ -567,7 +567,7 @@ Coordinate rotatePoint(Coordinate &p, double theta){
             }
             
         }
-        cout << "LOL: " << orientation << " " << centroidX << " " << centroidY;
+        //cout << "LOL: " << orientation << " " << centroidX << " " << centroidY;
         // centroidX /= count;
         // centroidY /= count;
 
@@ -635,7 +635,7 @@ Coordinate rotatePoint(Coordinate &p, double theta){
         double theta_radians = 0.5 * atan2(2*m11, m20 - m02);
         double theta_degrees = theta_radians * (180.0 / M_PI);
 
-        cout << " rad " << theta_radians << "\n";
+        //cout << " rad " << theta_radians << "\n";
         AABB aabb = findAABB(regionPixels, theta_radians, centroidX, centroidY);
 
         double percentFilled = boxFilledPercentage(aabb, regionPixels.size());
@@ -645,7 +645,7 @@ Coordinate rotatePoint(Coordinate &p, double theta){
         tie(u20, u02) = computeInertia(theta_radians, m20, m02, m11);
 
 
-        cout << "perc filled " << percentFilled;
+        //cout << "perc filled " << percentFilled;
         Point2f centroid(centroidX, centroidY);
 
         
@@ -688,4 +688,34 @@ Coordinate rotatePoint(Coordinate &p, double theta){
         line(image, c, d, cv::Scalar(255, 0, 0), 2);
         line(image, d, a, cv::Scalar(255, 0, 0), 2);
         return 0;
+    }
+
+    /**
+     * Draws features and label of a given object.
+     * @param image - image to draw features.
+     * @param regionName - region label name.
+     * @param features - the region features.
+     * @param obb - the oriented bounding box of the region.
+     * @return int 0 if succesfully executed.
+    */
+    int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector<Coordinate> obb){
+      int posy, posx = INT_MAX; 
+      for(const Coordinate a : obb){
+        if(a.y < posy){
+          posy = a.y;
+        }
+        if (a.x < posx){
+          posx = a.x;
+        }
+      }
+      int font = FONT_HERSHEY_SIMPLEX;
+      int fontScale = 1;
+      Scalar color(0, 255, 0);
+      int thickness = 1;
+      int lineType = LINE_AA;
+      String text = "Object: " + regionName;
+      posy -= 5;
+      Point position(posx, posy);
+      putText(image, text, position, font, fontScale, color, thickness, lineType);
+      return 0;
     }

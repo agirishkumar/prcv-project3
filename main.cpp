@@ -9,7 +9,7 @@ using namespace cv;
 int main() {
     cout << "Starting the image processing application..." << endl;
 
-    VideoCapture cap(2); 
+    VideoCapture cap(1); 
     if (!cap.isOpened()) {
         cerr << "Error: Cannot open the webcam stream." << endl;
         return -1;
@@ -81,7 +81,9 @@ int main() {
             RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID);
             cout << "area: "<< features.area << endl;
             if (features.area > 5000) {
-        drawObb(frame, calculateOrientedBoundingBox(filteredRegionMap, regionID, features.theta, features.centroid.x, features.centroid.y));
+                vector<Coordinate> obb = calculateOrientedBoundingBox(filteredRegionMap, regionID, features.theta, features.centroid.x, features.centroid.y);
+                drawObb(frame, obb);
+                drawFeatures(frame, "unknown", features, obb);
             }
             
         }
