@@ -874,7 +874,7 @@ void detectAndLabelRegions(cv::Mat& image, const cv::Mat& regionMap, const std::
 
         cv::Point labelPos(features.centroid.x, features.centroid.y);
         if (minDistance <= 10 ) {
-            cv::putText(image, label, labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+            cv::putText(image, "Object: " + label + " Percentage filled: " + to_string(features.percentFilled), labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
         } else {
             cv::putText(image, "Unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
         }
