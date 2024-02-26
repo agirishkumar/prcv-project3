@@ -1144,3 +1144,24 @@ std::vector<float> calculateStandardDeviations(const std::vector<std::vector<flo
   return standardDeviations;
 }
 
+int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector<Coordinate> obb){
+      int posy, posx = INT_MAX; 
+      for(const Coordinate a : obb){
+        if(a.y < posy){
+          posy = a.y;
+        }
+        if (a.x < posx){
+          posx = a.x;
+        }
+      }
+      int font = FONT_HERSHEY_SIMPLEX;
+      int fontScale = 1;
+      Scalar color(0, 255, 0);
+      int thickness = 1;
+      int lineType = LINE_AA;
+      String text = "Object: " + regionName;
+      posy -= 5;
+      Point position(posx, posy);
+      putText(image, text, position, font, fontScale, color, thickness, lineType);
+      return 0;
+    }
