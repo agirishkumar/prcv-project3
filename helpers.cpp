@@ -498,6 +498,7 @@ bool saveFeatureVectorToFile(const RegionFeatures& features, const std::string& 
 }
 
 
+// Rotates a point by a given theta.
 Coordinate rotatePoint(Coordinate &p, float theta){
         return {
             p.x * cos(theta) - p.y * sin(theta),
@@ -505,7 +506,7 @@ Coordinate rotatePoint(Coordinate &p, float theta){
         };
     }
 
-//calculates central moments.
+    //Calculates central moments.
     tuple<float, float, float> calculateCentralMoment(vector<Coordinate> pixels, float centroidX, float centroidY, int orderMomentX, int orederMonentY){
         float moment02 = 0;
         float moment20 = 0;
@@ -562,17 +563,12 @@ Coordinate rotatePoint(Coordinate &p, float theta){
                 if(regionId == targetID){
                     Coordinate c = {static_cast<double>(j), static_cast<double>(i)};
                     pixels.push_back(c);
-                    // centroidX += j;
-                    // centroidY += i;
-                    // count++;
                 }
             }
             
         }
-        // cout << "LOL: " << orientation << " " << centroidX << " " << centroidY;
-        // centroidX /= count;
-        // centroidY /= count;
 
+        // Finds the axis aligned bounding box.
         AABB aabb = findAABB(pixels, orientation, centroidX, centroidY);
 
         vector<Coordinate> corners = {
@@ -592,19 +588,33 @@ Coordinate rotatePoint(Coordinate &p, float theta){
         return obb;
     }
 
-    
+    /**
+     * Computes the percentage of pixels filled of the box.
+    */
     float boxFilledPercentage(AABB &aabb, int pixelCount){
         // cout << aabb.max.x << " " << aabb.max.y << " " << aabb.min.x << " " << aabb.min.y;
         float area = (aabb.max.x - aabb.min.x) * (aabb.max.y - aabb.min.y);
         return (float)pixelCount / area * 100.0;
     }
 
+    /**
+     * Computes the inertia of a region.
+     * @param Mat& regionMap - the map with region labels on them.
+     * @param int targetID - the target region to compute the features.
+     * @return RegionFeatures the structure with region features.
+    */
     tuple<float, float> computeInertia(float theta, float moment20, float moment02, float moment11){
         float u20 = moment20 * cos(theta) * cos(theta) + moment02 * sin(theta) * sin(theta) + moment11 * sin(2*theta);
         float u02 = moment20 * sin(theta) * sin(theta) + moment02 * cos(theta) * cos(theta) - moment11 * sin(2*theta);
         return make_tuple(u20, u02);
     }
 
+    /**
+     * Computes the features of a region with the given id.
+     * @param Mat& regionMap - the map with region labels on them.
+     * @param int targetID - the target region to compute the features.
+     * @return RegionFeatures the structure with region features.
+    */
     RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int targetID) {
         float centroidX = 0;
         float centroidY = 0;
@@ -655,7 +665,14 @@ Coordinate rotatePoint(Coordinate &p, float theta){
     }
 
 
-    //draws the principal axis.
+    /**
+     * Draws the axis on the image.
+     * @param image - image to draw the axis on.
+     * @param double theta - the angle of the principal axis.
+     * @param centroidX - the x coordinate of the centroid of the region.
+     * @param centroidY - the y coordinate of the centroid of the region.
+     * @return int 0 if the operation is successful.
+    */
     int drawAxis(Mat &image, double theta, int centroidX, int centroidY){
         double L = 100; 
 
@@ -668,7 +685,11 @@ Coordinate rotatePoint(Coordinate &p, float theta){
         return 0;
     }
 
-    // draws the oriented Bounding box
+    /**
+     * Draws the oriented bounding box on the image.
+     * @param image - image to draw the box on.
+     * @param vector<Coordinate> obb - the coordinate of the oriented bounding box.
+    */
     int drawObb(Mat &image, vector<Coordinate> obb){
         if (obb.size() != 4) {
             cerr << "Error: OBB must contain exactly 4 points." << endl;
@@ -777,7 +798,42 @@ std::vector<std::vector<float>> loadFeatureVectors(const std::string& filename) 
     return featureVectors;
 }
 
+/**
+ * Calculates a distance based k-nearest neighbors and returns the object's label.
+ * @param features - the object's features.
+ * @param objects - object's and their labels from the database.
+ * @param int numNeighbors - the number of neighbors to use.
+ * @param float std - standart deviation of features.
+ * @param minDistance - the minimal distance to the objects.
+ * 
+*/
+String knn(const std::vector<float>& features, map<int, DatabaseEntry> &objects, int numNeighbors, vector<float> &std, float &minDistance){
+      vector<pair<String, double>> distances;
+      for(const auto& object : objects){
+        distances.push_back(make_pair(object.second.label, calculateScaledEuclideanDistance(features, object.second.features, std)));
+      }
+      sort(distances.begin(), distances.end());
 
+      map<String, vector<double>> closestClasses;
+      for(pair<String, double> pair : distances){
+        if(closestClasses[pair.first].size() < numNeighbors){
+          closestClasses[pair.first].push_back(pair.second);
+        }
+      }
+      
+      map<String, double> closestClass;
+      String label;
+      double closestDistance = std::numeric_limits<double>::max();
+      for (const auto& pair : closestClasses) {
+        double distance = accumulate(pair.second.begin(), pair.second.end(), 0.0) / pair.second.size();
+        if( distance < closestDistance){
+          label = pair.first;
+          closestDistance = distance;
+        }
+      }
+      minDistance = closestDistance;
+      return label;
+    }
 
 void detectAndLabelRegions(cv::Mat& image, const cv::Mat& regionMap, const std::string& databaseFilename) {
     auto database = loadDatabase(databaseFilename);
@@ -810,13 +866,14 @@ void detectAndLabelRegions(cv::Mat& image, const cv::Mat& regionMap, const std::
         };
 
         float minDistance;
-        std::string label = compareWithDatabase(database, featureVector, stdDev, minDistance);
-
+        //std::string label = compareWithDatabase(database, featureVector, stdDev, minDistance);
+        //cout << "knn";
+        std::string label = knn(featureVector, database, 2, stdDev, minDistance);
         cout << "label: " << label << endl;
         cout << "minDistance: " << minDistance << endl;
 
         cv::Point labelPos(features.centroid.x, features.centroid.y);
-        if (minDistance <= 15 ) {
+        if (minDistance <= 10 ) {
             cv::putText(image, label, labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
         } else {
             cv::putText(image, "Unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
@@ -840,7 +897,7 @@ std::vector<float> calculateStandardDeviations(const std::vector<std::vector<flo
     std::vector<float> variances(means.size(), 0.0f);
     for (const auto& vector : featureVectors) {
         for (size_t i = 0; i < vector.size(); ++i) {
-            variances[i] += std::pow(vector[i] - means[i], 2);
+            variances[i] += (vector[i] - means[i]) * (vector[i] - means[i]);
         }
     }
     for (float& variance : variances) {
@@ -854,6 +911,7 @@ std::vector<float> calculateStandardDeviations(const std::vector<std::vector<flo
 
     return standardDeviations;
 }
+
 
 
 
