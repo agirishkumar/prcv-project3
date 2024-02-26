@@ -41,6 +41,11 @@ int main()
 
     // Create windows
     namedWindow("Live Feed", WINDOW_AUTOSIZE);
+    namedWindow("Preprocessed feed", WINDOW_AUTOSIZE);
+    namedWindow("KNN thresholded feed", WINDOW_AUTOSIZE);
+    namedWindow("Cleaned thresholded feed", WINDOW_AUTOSIZE);
+    namedWindow("Region Map", WINDOW_AUTOSIZE);
+    namedWindow("Filtered Region Map", WINDOW_AUTOSIZE);
     namedWindow("Feature Visualization", WINDOW_AUTOSIZE);
 
     Mat frame, preprocessedImg, kmeansImage, cleanedImage;
@@ -56,19 +61,29 @@ int main()
 
         // Preprocess the frame
         preprocessImg(frame, preprocessedImg);
+        imshow("Preprocessed feed", preprocessedImg);
 
         // Apply k-means thresholding
         kmeansThresholding(preprocessedImg, kmeansImage);
+        imshow("KNN thresholded feed", kmeansImage);
+        
 
         // Clean the thresholded image
         cleanThresholdedImage(kmeansImage, cleanedImage);
+        imshow("Cleaned thresholded feed", cleanedImage);
 
         // Apply region growing on the cleaned, thresholded image
         Mat regionMap;
         regionGrowing(cleanedImage, regionMap);
+        Mat coloredRegions = regionColor(regionMap);
+        imshow("Region Map", coloredRegions);
+        
 
         // Filter out small regions
         Mat filteredRegionMap = removeSmallRegions(regionMap, 5000);
+        Mat coloredFilteredRegions = regionColor(filteredRegionMap);
+        imshow("Filtered Region Map", coloredFilteredRegions);
+        
 
         if (state == DETECTION)
         {

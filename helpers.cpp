@@ -2,7 +2,7 @@
 Authors: Girish Kumar Adari, Alexander Seljuk
 PRCV Project 3: Real-time 2-D Object Recognition
 
-this file contains all the helper functions for the image processing and object detection application.
+this file contains all the helper functions for the image processing and application.
 */
 
 #include <opencv2/opencv.hpp>
