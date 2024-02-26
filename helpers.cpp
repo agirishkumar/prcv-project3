@@ -554,6 +554,7 @@ Coordinate rotatePoint(Coordinate &p, float theta)
       p.x * sin(theta) + p.y * cos(theta)};
 }
 
+
 /**
  * Calculate the central moment of the given pixels around the specified centroid.
  *
@@ -677,8 +678,6 @@ vector<Coordinate> calculateOrientedBoundingBox(Mat &regionMap, int targetID, do
   // cout << "LOL: " << orientation << " " << centroidX << " " << centroidY;
   // centroidX /= count;
   // centroidY /= count;
-
-  AABB aabb = findAABB(pixels, orientation, centroidX, centroidY);
 
   vector<Coordinate> corners = {
       {aabb.min.x, aabb.min.y},
@@ -961,12 +960,50 @@ std::map<int, DatabaseEntry> loadDatabase(const std::string &filename)
       if (iss.peek() == ',')
         iss.ignore();
     }
-
-    database[id++] = entry;
+    
+        database[id++] = entry;
   }
 
   return database;
 }
+
+
+/**
+ * Calculates a distance based k-nearest neighbors and returns the object's label.
+ * @param features - the object's features.
+ * @param objects - object's and their labels from the database.
+ * @param int numNeighbors - the number of neighbors to use.
+ * @param float std - standart deviation of features.
+ * @param minDistance - the minimal distance to the objects.
+ * 
+*/
+String knn(const std::vector<float>& features, map<int, DatabaseEntry> &objects, int numNeighbors, vector<float> &std, float &minDistance){
+      vector<pair<String, double>> distances;
+      for(const auto& object : objects){
+        distances.push_back(make_pair(object.second.label, calculateScaledEuclideanDistance(features, object.second.features, std)));
+      }
+      sort(distances.begin(), distances.end());
+
+      map<String, vector<double>> closestClasses;
+      for(pair<String, double> pair : distances){
+        if(closestClasses[pair.first].size() < numNeighbors){
+          closestClasses[pair.first].push_back(pair.second);
+        }
+      }
+      
+      map<String, double> closestClass;
+      String label;
+      double closestDistance = std::numeric_limits<double>::max();
+      for (const auto& pair : closestClasses) {
+        double distance = accumulate(pair.second.begin(), pair.second.end(), 0.0) / pair.second.size();
+        if( distance < closestDistance){
+          label = pair.first;
+          closestDistance = distance;
+        }
+      }
+      minDistance = closestDistance;
+      return label;
+    }
 
 /**
  * Loads feature vectors from a file.
@@ -1018,6 +1055,7 @@ void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::
   auto featureVectors = loadFeatureVectors(databaseFilename); // Assuming features are in the same file
   auto stdDev = calculateStandardDeviations(featureVectors);
 
+
   // Print the standard deviations
   // std::cout << "Standard Deviations:" << std::endl;
   // for (size_t i = 0; i < stdDev.size(); ++i) {
@@ -1043,19 +1081,19 @@ void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::
         features.area};
 
     float minDistance;
-    std::string label = compareWithDatabase(database, featureVector, stdDev, minDistance);
+        //std::string label = compareWithDatabase(database, featureVector, stdDev, minDistance);
+        //cout << "knn";
+        std::string label = knn(featureVector, database, 2, stdDev, minDistance);
+        cout << "label: " << label << endl;
+        cout << "minDistance: " << minDistance << endl;
 
-    // cout << "label: " << label << endl;
-    // cout << "minDistance: " << minDistance << endl;
+        cv::Point labelPos(features.centroid.x, features.centroid.y);
+        if (minDistance <= 10 ) {
+            cv::putText(image, "Object: " + label + " Percentage filled: " + to_string(features.percentFilled), labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+        } else {
+            cv::putText(image, "Unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
+        }
 
-    cv::Point labelPos(features.centroid.x, features.centroid.y);
-    if (minDistance <= 1.8)
-    {
-      cv::putText(image, label, labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
-    }
-    else
-    {
-      cv::putText(image, "Unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
     }
   }
 }
@@ -1084,12 +1122,15 @@ std::vector<float> calculateStandardDeviations(const std::vector<std::vector<flo
     mean /= featureVectors.size();
   }
 
-  std::vector<float> variances(means.size(), 0.0f);
-  for (const auto &vector : featureVectors)
-  {
-    for (size_t i = 0; i < vector.size(); ++i)
-    {
-      variances[i] += std::pow(vector[i] - means[i], 2);
+
+    std::vector<float> variances(means.size(), 0.0f);
+    for (const auto& vector : featureVectors) {
+        for (size_t i = 0; i < vector.size(); ++i) {
+            variances[i] += (vector[i] - means[i]) * (vector[i] - means[i]);
+        }
+    }
+    for (float& variance : variances) {
+        variance /= featureVectors.size();
     }
   }
   for (float &variance : variances)
@@ -1105,3 +1146,4 @@ std::vector<float> calculateStandardDeviations(const std::vector<std::vector<flo
 
   return standardDeviations;
 }
+

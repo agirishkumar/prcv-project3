@@ -144,3 +144,79 @@ int main()
     destroyAllWindows();
     return 0;
 }
+
+
+// int main() {
+//     std::cout << "Starting the image processing application..." << endl;
+
+//     // VideoCapture cap(0);
+//     // if (!cap.isOpened()) {
+//     //     cerr << "Error: Cannot open the webcam stream." << endl;
+//     //     return -1;
+//     // }
+//     Mat frame = imread("sp1.jpeg");
+//     // Define states for the application
+//     enum AppState { DETECTION, LABELING } state = DETECTION;
+
+//     // Create windows
+//     namedWindow("Live Feed", WINDOW_AUTOSIZE);
+//     namedWindow("Feature Visualization", WINDOW_AUTOSIZE);
+
+//     Mat preprocessedImg, kmeansImage, cleanedImage;
+//     string databaseFilename = "database.csv";
+
+//         imshow("Live Feed", frame);
+
+//         // Preprocess the frame
+//         preprocessImg(frame, preprocessedImg);
+
+//         // Apply k-means thresholding
+//         kmeansThresholding(preprocessedImg, kmeansImage);
+
+//         // Clean the thresholded image
+//         cleanThresholdedImage(kmeansImage, cleanedImage);
+
+//         // Apply region growing on the cleaned, thresholded image
+//         Mat regionMap;
+//         regionGrowing(cleanedImage, regionMap);
+
+//         // Filter out small regions
+//         Mat filteredRegionMap = removeSmallRegions(regionMap, 5000);
+
+//             // Your detection code goes here
+//             detectAndLabelRegions(frame, filteredRegionMap, databaseFilename);
+
+//             double minVal, maxVal;
+//             cv::minMaxLoc(regionMap, &minVal, &maxVal);
+//             int maxRegionID = static_cast<int>(maxVal);
+
+//             // Compute and display features for each major region
+//             for (int regionID = 1; regionID <= maxRegionID; ++regionID) {
+//                 RegionFeatures features = computeRegionFeatures(filteredRegionMap, regionID);
+//                 if (features.area > 10000) {
+//                 vector<Coordinate> obb = calculateOrientedBoundingBox(filteredRegionMap, regionID, features.theta, features.centroid.x, features.centroid.y);
+//                 drawObb(frame, obb); 
+//             }
+//             }
+//             imshow("Feature Visualization", frame);
+//             waitKey(0);
+
+//         // Handle user input
+//             // toggle between states
+//                 std::cout << "Enter label for the current object: ";
+//                 string label;
+//                 std::cin >> label;  // Get label from the user
+
+//                 // Compute features for the region
+//                 RegionFeatures features = computeRegionFeatures(filteredRegionMap, 1);  // Adjust the region ID if necessary
+
+//                 if (features.area > 1000) {
+//                     saveFeatureVectorToFile(features, label, databaseFilename);
+//                     std::cout << "Feature vector saved successfully. Switching back to detection mode." << endl;
+//                     state = DETECTION;
+//                 } else {
+//                     std::cout << "Selected region is too small and was not saved." << endl;
+//                 }
+
+//     return 0;
+// }
