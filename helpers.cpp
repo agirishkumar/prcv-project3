@@ -678,6 +678,7 @@ vector<Coordinate> calculateOrientedBoundingBox(Mat &regionMap, int targetID, do
   // cout << "LOL: " << orientation << " " << centroidX << " " << centroidY;
   // centroidX /= count;
   // centroidY /= count;
+  AABB aabb = findAABB(pixels, orientation, centroidX, centroidY);
 
   vector<Coordinate> corners = {
       {aabb.min.x, aabb.min.y},
@@ -1081,20 +1082,20 @@ void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::
         features.area};
 
     float minDistance;
-        //std::string label = compareWithDatabase(database, featureVector, stdDev, minDistance);
-        //cout << "knn";
-        std::string label = knn(featureVector, database, 2, stdDev, minDistance);
-        cout << "label: " << label << endl;
-        cout << "minDistance: " << minDistance << endl;
+    //std::string label = compareWithDatabase(database, featureVector, stdDev, minDistance);
+    //cout << "knn";
+    std::string label = knn(featureVector, database, 2, stdDev, minDistance);
+    cout << "label: " << label << endl;
+    cout << "minDistance: " << minDistance << endl;
 
-        cv::Point labelPos(features.centroid.x, features.centroid.y);
-        if (minDistance <= 10 ) {
-            cv::putText(image, "Object: " + label + " Percentage filled: " + to_string(features.percentFilled), labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
-        } else {
-            cv::putText(image, "Unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
-        }
-
+    cv::Point labelPos(features.centroid.x, features.centroid.y);
+    if (minDistance <= 10 ) {
+        cv::putText(image, "Object: " + label + " Percentage filled: " + to_string(features.percentFilled), labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+    } else {
+        cv::putText(image, "Unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
     }
+
+    
   }
 }
 
@@ -1123,20 +1124,16 @@ std::vector<float> calculateStandardDeviations(const std::vector<std::vector<flo
   }
 
 
-    std::vector<float> variances(means.size(), 0.0f);
-    for (const auto& vector : featureVectors) {
-        for (size_t i = 0; i < vector.size(); ++i) {
-            variances[i] += (vector[i] - means[i]) * (vector[i] - means[i]);
-        }
-    }
-    for (float& variance : variances) {
-        variance /= featureVectors.size();
-    }
+  std::vector<float> variances(means.size(), 0.0f);
+  for (const auto& vector : featureVectors) {
+      for (size_t i = 0; i < vector.size(); ++i) {
+          variances[i] += (vector[i] - means[i]) * (vector[i] - means[i]);
+      }
   }
-  for (float &variance : variances)
-  {
-    variance /= featureVectors.size();
+  for (float& variance : variances) {
+      variance /= featureVectors.size();
   }
+  
 
   std::vector<float> standardDeviations;
   for (const float variance : variances)
