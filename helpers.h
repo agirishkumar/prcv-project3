@@ -1,3 +1,9 @@
+/*
+Authors: Girish Kumar Adari, Alexander Seljuk
+
+this is header file for all the helper functions and also structs for the image processing and object detection application.
+*/
+
 #ifndef MHELPERS_H
 #define MHELPERS_H
 
@@ -103,39 +109,35 @@ Mat regionColor(Mat &regionMap);
 Mat removeSmallRegions(Mat &regionMap, int minSize);
 
 // Structure to hold region features
-struct RegionFeatures {
+struct RegionFeatures
+{
     float percentFilled;
     float boundingBoxAspectRatio;
-    cv::Point2f centroid; 
+    cv::Point2f centroid;
     float theta;
     float mainAxisMoment;
     float secondAxisMoment;
     float area;
 };
 
-struct Coordinate{
-        double x, y;
-    };
+struct Coordinate
+{
+    double x, y;
+};
 
-    struct AABB{
-        Coordinate min, max;
-    };
+struct AABB
+{
+    Coordinate min, max;
+};
 
-    struct OBB{
-        Coordinate a, b, c, d;
-    };
+struct OBB
+{
+    Coordinate a, b, c, d;
+};
 
-// Function declaration
-// RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int regionID, const cv::Mat& originalImage) ;
+bool saveFeatureVectorToFile(const RegionFeatures &features, const std::string &label, const std::string &filename);
 
-
-// Function to display computed features on the image
-// void displayRegionFeatures(cv::Mat &image, const cv::Mat &regionMap, int regionID, const RegionFeatures &features);
-
-
-bool saveFeatureVectorToFile(const RegionFeatures& features, const std::string& label, const std::string& filename);
-
-RegionFeatures computeRegionFeatures(const cv::Mat& regionMap, int targetID);
+RegionFeatures computeRegionFeatures(const cv::Mat &regionMap, int targetID);
 
 int drawObb(Mat &image, vector<Coordinate> obb);
 
@@ -143,28 +145,28 @@ int drawAxis(Mat &image, double theta, int centroidX, int centroidY);
 
 vector<Coordinate> calculateOrientedBoundingBox(Mat &regionMap, int targetID, double orientation, float centroidX, float centroidY);
 
-struct DatabaseEntry {
-    std::vector<float> features; // You can adjust the types and number of features based on your application
+struct DatabaseEntry
+{
+    std::vector<float> features;
     std::string label;
 };
 
-std::map<int, DatabaseEntry> loadDatabase(const std::string& filename);
+std::map<int, DatabaseEntry> loadDatabase(const std::string &filename);
 
-void detectAndLabelRegions(cv::Mat& image, const cv::Mat& regionMap, const std::string& databasePath);
+void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databasePath);
 
-std::map<int, DatabaseEntry> loadDatabase(const std::string& filename);
+std::map<int, DatabaseEntry> loadDatabase(const std::string &filename);
 
+float calculateEuclideanDistance(const std::vector<float> &vec1, const std::vector<float> &vec2);
 
-float calculateEuclideanDistance(const std::vector<float>& vec1, const std::vector<float>& vec2);
+void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databaseFilename);
 
-void detectAndLabelRegions(cv::Mat& image, const cv::Mat& regionMap, const std::string& databaseFilename);
+std::string compareWithDatabase(const std::map<int, DatabaseEntry> &database, const std::vector<float> &features, const std::vector<float> &stdDev, float &minDistance);
 
-std::string compareWithDatabase(const std::map<int, DatabaseEntry>& database, const std::vector<float>& features, const std::vector<float>& stdDev, float& minDistance);
+std::vector<float> calculateStandardDeviations(const std::vector<std::vector<float>> &featureVectors);
 
-std::vector<float> calculateStandardDeviations(const std::vector<std::vector<float>>& featureVectors);
+float calculateScaledEuclideanDistance(const std::vector<float> &vec1, const std::vector<float> &vec2, const std::vector<float> &stdDev);
 
-float calculateScaledEuclideanDistance(const std::vector<float>& vec1, const std::vector<float>& vec2, const std::vector<float>& stdDev);
-
-std::vector<std::vector<float>> loadFeatureVectors(const std::string& filename);
+std::vector<std::vector<float>> loadFeatureVectors(const std::string &filename);
 
 #endif // MHELPERS_H
