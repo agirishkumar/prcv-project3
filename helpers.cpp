@@ -1050,7 +1050,7 @@ std::vector<std::vector<float>> loadFeatureVectors(const std::string &filename)
  *
  * @throws None
  */
-void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databaseFilename)
+string detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databaseFilename)
 {
   auto database = loadDatabase(databaseFilename);
   auto featureVectors = loadFeatureVectors(databaseFilename); // Assuming features are in the same file
@@ -1066,6 +1066,7 @@ void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::
   double minVal, maxVal;
   cv::minMaxLoc(regionMap, &minVal, &maxVal);
   int maxRegionID = static_cast<int>(maxVal);
+  std::string label;
 
   for (int regionID = 1; regionID <= maxRegionID; ++regionID)
   {
@@ -1084,9 +1085,9 @@ void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::
     float minDistance;
     //std::string label = compareWithDatabase(database, featureVector, stdDev, minDistance);
     //cout << "knn";
-    std::string label = knn(featureVector, database, 2, stdDev, minDistance);
-    cout << "label: " << label << endl;
-    cout << "minDistance: " << minDistance << endl;
+    label = knn(featureVector, database, 2, stdDev, minDistance);
+    // cout << "label: " << label << endl;
+    // cout << "minDistance: " << minDistance << endl;
 
     cv::Point labelPos(features.centroid.x, features.centroid.y);
     if (minDistance <= 10 ) {
@@ -1094,9 +1095,11 @@ void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::
     } else {
         cv::putText(image, "Unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
     }
+    
 
     
   }
+  return label;
 }
 
 /**

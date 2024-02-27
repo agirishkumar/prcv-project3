@@ -50,6 +50,7 @@ int main()
 
     Mat frame, preprocessedImg, kmeansImage, cleanedImage;
     string databaseFilename = "database.csv";
+    string detectedLabel;
 
     while (true)
     {
@@ -80,7 +81,7 @@ int main()
         
 
         // Filter out small regions
-        Mat filteredRegionMap = removeSmallRegions(regionMap, 5000);
+        Mat filteredRegionMap = removeSmallRegions(regionMap, 8000);
         Mat coloredFilteredRegions = regionColor(filteredRegionMap);
         imshow("Filtered Region Map", coloredFilteredRegions);
         
@@ -88,7 +89,7 @@ int main()
         if (state == DETECTION)
         {
             // Your detection code goes here
-            detectAndLabelRegions(frame, filteredRegionMap, databaseFilename);
+            detectedLabel = detectAndLabelRegions(frame, filteredRegionMap, databaseFilename);
 
             double minVal, maxVal;
             cv::minMaxLoc(regionMap, &minVal, &maxVal);
@@ -133,6 +134,23 @@ int main()
                     cout << "Selected region is too small and was not saved." << endl;
                 }
             }
+        }
+        else if(key == 'c' || key == 'C'){
+            if (state == DETECTION){
+                cout<< "Enter the true label for the current object: ";
+                string trueLabel;
+                cin >> trueLabel;
+                if(trueLabel == detectedLabel){
+                    cout << "Correctly identified the object." << endl;
+                
+                }else{
+                    cout << "Incorrectly identified the object. Switching back to labeling mode." << endl;
+                    
+                }
+                
+            }
+            state = DETECTION;
+
         }
         else if (key == 27 || key == 'q')
         {

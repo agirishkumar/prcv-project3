@@ -153,13 +153,13 @@ struct DatabaseEntry
 
 std::map<int, DatabaseEntry> loadDatabase(const std::string &filename);
 
-void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databasePath);
+string detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databasePath);
 
 std::map<int, DatabaseEntry> loadDatabase(const std::string &filename);
 
 float calculateEuclideanDistance(const std::vector<float> &vec1, const std::vector<float> &vec2);
 
-void detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databaseFilename);
+
 
 std::string compareWithDatabase(const std::map<int, DatabaseEntry> &database, const std::vector<float> &features, const std::vector<float> &stdDev, float &minDistance);
 
