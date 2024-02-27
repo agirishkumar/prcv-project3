@@ -1,39 +1,48 @@
 # prcv-project3
 # Real-time 2-D Object Recognition
-Girish Kumar and Alexander Seljuk
 
-This project explores binary image classification using threshholding, cleanup, segmentation, feature extraction. The object's features are then collected into a database and new unknown objects are then classified using algorithms like knn.
+## Girish Kumar and Alexander Seljuk
+## Time travel days: 2
+
+This project explores binary image classification using threshholding, cleanup, segmentation, feature extraction, feature matching. Every object detected is classified given a database of features and labels. All the steps were implemented from the scratch.
 
 Running the Program
 
 ## To compile and execute the program, follow these steps:
 
-`make`
+make
 
-./Assignment3 
+./prj3
 
 
 ## Functionality
 
-The program is capturing a video stream from the input and will detect objects and show their precentage of oriented bounding box filled. Detection mode automatically classifies any found objects bigger than a certain threshold. The classification is done by finding the closest neighbor or knn with 2 neighbors dependingon the classification mode. The database has the following object data: wallet, phone, mobile, gripper, controller, pan, headphones. The labeling mode allows to label objects and remember them in a database. The program reacts to the following key presses:
+The program is capturing a video stream from the input and will detect objects and show their precentage of oriented bounding box filled. 
 
-`q` quit the program.
+Detection mode automatically classifies any number of found objects bigger than a certain pixel area. The classification is done by finding the scaled euclidian (closest neighbor)  or KNN with 2 neighbors depending on the classification mode. 
 
-`n` train mode, asks the user for a label and saves the current object's features into the database.
+The database has the following object data: wallet, phone, mobile, gripper, controller, pan, headphones, vape. 
 
-`c` will request the correct image label to analyze if the classification was correct.
+The labeling mode allows to label objects and remember them in the database. 
 
-`d` detect mode - will detect and label the regions.
+The confusion matrix will be built when the c key is pressed and user prompts the true label, it compares with with the detected label. when key is P is pressed it prints out the till then built confusion matrix and corresponding accuracy.
 
-`k` switch to knn mode classification, uses knn to classify objects.
+The program reacts to the following key presses:
 
-`p` prints the confusion matrix.
+`q` or `Esc` quit the program.
+
+`n` or `N` train mode, asks the user for a label and saves the current object's features into the database.
+
+`c` or `C` will request the correct image label to analyze if the classification was correct. (part of building confusion matrix)
+
+`d` or `D` detect mode - will detect and label the regions.
+
+`k` or `K` toggles between scaled euclidian and knn mode classification.
+
+`p` or `P` prints the confusion matrix and the accuracy of the classification.
 
 
 
 ## Results:
 
-The program successfully classifies the known objects and detects unknown objects. 
-
-
-## Time travel days: 2
+The program successfully implements the pipeline and classifies objects on a video stream. It can apply different matching methods(knn and nearest neighbor). And automatically detect if an object is not known.
