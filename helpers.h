@@ -153,7 +153,7 @@ struct DatabaseEntry
 
 std::map<int, DatabaseEntry> loadDatabase(const std::string &filename);
 
-string detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databasePath);
+string detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databasePath, bool method);
 
 std::map<int, DatabaseEntry> loadDatabase(const std::string &filename);
 

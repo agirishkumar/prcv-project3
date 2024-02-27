@@ -1037,18 +1037,20 @@ std::vector<std::vector<float>> loadFeatureVectors(const std::string &filename)
   return featureVectors;
 }
 
+
 /**
- * Detects and labels regions in the input image based on the provided region map and database file.
+ * Detects and labels regions in the given image using the provided region map and database file.
  *
- * @param image the input image to process
+ * @param image the input image
  * @param regionMap the map of regions in the image
- * @param databaseFilename the filename of the database to use for comparison
+ * @param databaseFilename the filename of the database containing feature vectors
+ * @param method optional parameter indicating the method to use for labeling regions
  *
- * @return void
+ * @return the label of the detected region
  *
- * @throws None
+ * @throws ErrorType description of error
  */
-string detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databaseFilename)
+string detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std::string &databaseFilename, bool method = true)
 {
   auto database = loadDatabase(databaseFilename);
   auto featureVectors = loadFeatureVectors(databaseFilename); // Assuming features are in the same file
@@ -1068,7 +1070,7 @@ string detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std
 
   for (int regionID = 1; regionID <= maxRegionID; ++regionID)
   {
-    RegionFeatures features = computeRegionFeatures(regionMap, regionID); // Implement this based on your application
+    RegionFeatures features = computeRegionFeatures(regionMap, regionID); 
 
     std::vector<float> featureVector = {
         features.percentFilled,
@@ -1080,9 +1082,17 @@ string detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std
         };
 
     float minDistance;
+    if(method){
+      cout << "scaled euclidean" << endl;
+      label = compareWithDatabase(database, featureVector, stdDev, minDistance);
+    }else{
+      cout << "knn" << endl;
+      label = knn(featureVector, database, 2, stdDev, minDistance);
+
+    }
     //std::string label = compareWithDatabase(database, featureVector, stdDev, minDistance);
     //cout << "knn";
-    label = knn(featureVector, database, 2, stdDev, minDistance);
+    
     // cout << "label: " << label << endl;
     cout << "minDistance: " << minDistance << endl;
 
@@ -1144,6 +1154,16 @@ std::vector<float> calculateStandardDeviations(const std::vector<std::vector<flo
   return standardDeviations;
 }
 
+/**
+ * Draws features on the input image based on the region name, region features, and the orientation of the bounding box.
+ *
+ * @param image the input image to draw features on
+ * @param regionName the name of the region
+ * @param features the features of the region
+ * @param obb the oriented bounding box coordinates
+ *
+ * @return 0 upon successful completion
+ */
 int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector<Coordinate> obb){
       int posy, posx = INT_MAX; 
       for(const Coordinate a : obb){
@@ -1166,6 +1186,12 @@ int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector
       return 0;
     }
 
+/**
+ * Initializes the confusion matrix with zeros for all label combinations.
+ *
+ * @param confusionMatrix the confusion matrix to be initialized
+ * @param labels the list of labels
+ */
 void initializeConfusionMatrix(map<string, map<string, int>>& confusionMatrix, const vector<string>& labels) {
     for (const auto& trueLabel : labels) {
         for (const auto& predictedLabel : labels) {
@@ -1174,6 +1200,17 @@ void initializeConfusionMatrix(map<string, map<string, int>>& confusionMatrix, c
     }
 }
 
+/**
+ * Update the confusion matrix with the given true and predicted labels.
+ *
+ * @param confusionMatrix the confusion matrix to be updated
+ * @param trueLabel the true label
+ * @param predictedLabel the predicted label
+ *
+ * @return void
+ *
+ * @throws None
+ */
 void updateConfusionMatrix(map<string, map<string, int>>& confusionMatrix, const string& trueLabel, const string& predictedLabel) {
     confusionMatrix[trueLabel][predictedLabel]++;
 }
@@ -1187,6 +1224,15 @@ void printConfusionMatrix(const map<string, map<string, int>>& confusionMatrix) 
     }
 }
 
+/**
+ * Calculate the accuracy based on the confusion matrix.
+ *
+ * @param confusionMatrix the confusion matrix containing the true and predicted labels
+ *
+ * @return the accuracy as a double value
+ *
+ * @throws None
+ */
 double calculateAccuracy(const std::map<std::string, std::map<std::string, int>>& confusionMatrix) {
     int correctPredictions = 0;
     int totalPredictions = 0;

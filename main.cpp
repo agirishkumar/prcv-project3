@@ -57,6 +57,7 @@ int main()
     Mat frame, preprocessedImg, kmeansImage, cleanedImage;
     string databaseFilename = "database.csv";
     string detectedLabel;
+    bool method = true;
 
     std::map<std::string, std::map<std::string, int>> confusionMatrix;
     std::vector<std::string> labels = getLabels();
@@ -114,7 +115,7 @@ int main()
         if (state == DETECTION)
         {
             // Your detection code goes here
-            detectedLabel = detectAndLabelRegions(frame, filteredRegionMap, databaseFilename);
+            detectedLabel = detectAndLabelRegions(frame, filteredRegionMap, databaseFilename, method);
 
             
         }
@@ -147,6 +148,12 @@ int main()
                     cout << "Selected region is too small and was not saved." << endl;
                 }
             }
+        }
+        if (key == 'k' || key == 'K')
+        {
+            // toggle between methods between scaledEuclideanDistance and KNN classification methods
+            method = !method;
+            
         }
         else if(key == 'c' || key == 'C'){
             if (state == DETECTION){
