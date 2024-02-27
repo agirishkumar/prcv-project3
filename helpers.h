@@ -169,4 +169,11 @@ float calculateScaledEuclideanDistance(const std::vector<float> &vec1, const std
 
 std::vector<std::vector<float>> loadFeatureVectors(const std::string &filename);
 
+// Confusion matrix functions
+void initializeConfusionMatrix(std::map<std::string, std::map<std::string, int>>& confusionMatrix, const std::vector<std::string>& labels);
+void updateConfusionMatrix(std::map<std::string, std::map<std::string, int>>& confusionMatrix, const std::string& trueLabel, const std::string& predictedLabel);
+void printConfusionMatrix(const std::map<std::string, std::map<std::string, int>>& confusionMatrix);
+
+double calculateAccuracy(const std::map<std::string, std::map<std::string, int>>& confusionMatrix);
+
 #endif // MHELPERS_H

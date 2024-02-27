@@ -527,10 +527,8 @@ bool saveFeatureVectorToFile(const RegionFeatures &features, const std::string &
        << features.boundingBoxAspectRatio << ","
        << features.centroid.x << ","
        << features.centroid.y << ","
-       << features.theta << ","
        << features.mainAxisMoment << ","
-       << features.secondAxisMoment << ","
-       << features.area;
+       << features.secondAxisMoment ;
 
   file << std::endl;
   file.close();
@@ -1077,20 +1075,19 @@ string detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std
         features.boundingBoxAspectRatio,
         features.centroid.x,
         features.centroid.y,
-        features.theta,
         features.mainAxisMoment,
         features.secondAxisMoment,
-        features.area};
+        };
 
     float minDistance;
     //std::string label = compareWithDatabase(database, featureVector, stdDev, minDistance);
     //cout << "knn";
     label = knn(featureVector, database, 2, stdDev, minDistance);
     // cout << "label: " << label << endl;
-    // cout << "minDistance: " << minDistance << endl;
+    cout << "minDistance: " << minDistance << endl;
 
     cv::Point labelPos(features.centroid.x, features.centroid.y);
-    if (minDistance <= 10 ) {
+    if (minDistance <= 0.75) {
         cv::putText(image, "Object: " + label + " Percentage filled: " + to_string(features.percentFilled), labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
     } else {
         cv::putText(image, "Unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
@@ -1168,3 +1165,43 @@ int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector
       putText(image, text, position, font, fontScale, color, thickness, lineType);
       return 0;
     }
+
+void initializeConfusionMatrix(map<string, map<string, int>>& confusionMatrix, const vector<string>& labels) {
+    for (const auto& trueLabel : labels) {
+        for (const auto& predictedLabel : labels) {
+            confusionMatrix[trueLabel][predictedLabel] = 0;
+        }
+    }
+}
+
+void updateConfusionMatrix(map<string, map<string, int>>& confusionMatrix, const string& trueLabel, const string& predictedLabel) {
+    confusionMatrix[trueLabel][predictedLabel]++;
+}
+
+void printConfusionMatrix(const map<string, map<string, int>>& confusionMatrix) {
+    for (const auto& row : confusionMatrix) {
+        for (const auto& col : row.second) {
+            cout << col.second << "\t";
+        }
+        cout << "\n";
+    }
+}
+
+double calculateAccuracy(const std::map<std::string, std::map<std::string, int>>& confusionMatrix) {
+    int correctPredictions = 0;
+    int totalPredictions = 0;
+
+    for (const auto& trueLabelPair : confusionMatrix) {
+        const std::string& trueLabel = trueLabelPair.first;
+        for (const auto& predictedLabelPair : trueLabelPair.second) {
+            const std::string& predictedLabel = predictedLabelPair.first;
+            int count = predictedLabelPair.second;
+            totalPredictions += count;
+            if (trueLabel == predictedLabel) {
+                correctPredictions += count;
+            }
+        }
+    }
+
+    return totalPredictions > 0 ? static_cast<double>(correctPredictions) / totalPredictions : 0;
+}

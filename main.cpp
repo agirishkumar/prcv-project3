@@ -13,9 +13,15 @@ This is the main file for the image processing application.
 using namespace std;
 using namespace cv;
 
+std::vector<std::string> getLabels() {
+    // You should populate this list with the labels you are classifying
+    return {"controller", "gripper", "watch", "wallet", "unknown"};
+}
+
 /**
  * The main function for the image processing application.
  * Lets the user choose between detecting and labeling objects.
+ * 
  *
  * @return int the exit status of the program
  *
@@ -51,6 +57,10 @@ int main()
     Mat frame, preprocessedImg, kmeansImage, cleanedImage;
     string databaseFilename = "database.csv";
     string detectedLabel;
+
+    std::map<std::string, std::map<std::string, int>> confusionMatrix;
+    std::vector<std::string> labels = getLabels();
+    initializeConfusionMatrix(confusionMatrix, labels);
 
     while (true)
     {
@@ -140,6 +150,7 @@ int main()
                 cout<< "Enter the true label for the current object: ";
                 string trueLabel;
                 cin >> trueLabel;
+                updateConfusionMatrix(confusionMatrix, trueLabel, detectedLabel);
                 if(trueLabel == detectedLabel){
                     cout << "Correctly identified the object." << endl;
                 
@@ -151,6 +162,13 @@ int main()
             }
             state = DETECTION;
 
+        }
+        else if (key == 'p' || key == 'P')
+        {
+            cout << "Confusion Matrix:" << endl;
+            printConfusionMatrix(confusionMatrix);
+
+            cout << "Accuracy: " << calculateAccuracy(confusionMatrix) << endl;
         }
         else if (key == 27 || key == 'q')
         {
