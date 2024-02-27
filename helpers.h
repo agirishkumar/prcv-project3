@@ -176,4 +176,7 @@ void printConfusionMatrix(const std::map<std::string, std::map<std::string, int>
 
 double calculateAccuracy(const std::map<std::string, std::map<std::string, int>>& confusionMatrix);
 
+int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector<Coordinate> obb);
+
+
 #endif // MHELPERS_H

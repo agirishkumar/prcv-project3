@@ -108,6 +108,8 @@ int main()
                 {
                     vector<Coordinate> obb = calculateOrientedBoundingBox(filteredRegionMap, regionID, features.theta, features.centroid.x, features.centroid.y);
                     drawObb(frame, obb);
+                    drawAxis(frame, features.theta, features.centroid.x, features.centroid.y);
+                    drawFeatures(frame, " ", features, obb);
                 }
             }
         

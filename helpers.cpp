@@ -807,14 +807,14 @@ RegionFeatures computeRegionFeatures(const cv::Mat &regionMap, int targetID)
  */
 int drawAxis(Mat &image, double theta, int centroidX, int centroidY)
 {
-  double L = 100;
+  double L = 300;
 
   // Calculate axis endpoints
   Point pt1(centroidX + L / 2 * cos(theta), centroidY + L / 2 * sin(theta));
   Point pt2(centroidX - L / 2 * cos(theta), centroidY - L / 2 * sin(theta));
 
   // Draw the line on the image
-  line(image, pt1, pt2, cv::Scalar(0, 0, 255), 2);
+  arrowedLine(image, pt1, pt2, cv::Scalar(0, 0, 255), 2);
   return 0;
 }
 
@@ -1166,6 +1166,7 @@ std::vector<float> calculateStandardDeviations(const std::vector<std::vector<flo
  */
 int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector<Coordinate> obb){
       int posy, posx = INT_MAX; 
+      int maxY = 0;
       for(const Coordinate a : obb){
         if(a.y < posy){
           posy = a.y;
@@ -1173,15 +1174,19 @@ int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector
         if (a.x < posx){
           posx = a.x;
         }
+        if(a.y > maxY){
+          maxY = a.y;
+        }
       }
       int font = FONT_HERSHEY_SIMPLEX;
       int fontScale = 1;
       Scalar color(0, 255, 0);
       int thickness = 1;
       int lineType = LINE_AA;
-      String text = "Object: " + regionName;
-      posy -= 5;
-      Point position(posx, posy);
+      String text = "Percent Filled: " + to_string(features.percentFilled);
+      posy = features.centroid.y - (maxY - posy) / 2;
+      //Point position(features.centroid.x - 10, posy);
+      Point position(features.centroid.x, features.centroid.y - 50);
       putText(image, text, position, font, fontScale, color, thickness, lineType);
       return 0;
     }
