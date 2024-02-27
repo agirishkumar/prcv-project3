@@ -43,7 +43,7 @@ int main()
     {
         DETECTION,
         LABELING
-    } state = DETECTION;
+    } state ;
 
     // Create windows
     namedWindow("Live Feed", WINDOW_AUTOSIZE);
@@ -94,14 +94,8 @@ int main()
         Mat filteredRegionMap = removeSmallRegions(regionMap, 8000);
         Mat coloredFilteredRegions = regionColor(filteredRegionMap);
         imshow("Filtered Region Map", coloredFilteredRegions);
-        
 
-        if (state == DETECTION)
-        {
-            // Your detection code goes here
-            detectedLabel = detectAndLabelRegions(frame, filteredRegionMap, databaseFilename);
-
-            double minVal, maxVal;
+        double minVal, maxVal;
             cv::minMaxLoc(regionMap, &minVal, &maxVal);
             int maxRegionID = static_cast<int>(maxVal);
 
@@ -115,8 +109,17 @@ int main()
                     drawObb(frame, obb);
                 }
             }
-            imshow("Feature Visualization", frame);
+        
+
+        if (state == DETECTION)
+        {
+            // Your detection code goes here
+            detectedLabel = detectAndLabelRegions(frame, filteredRegionMap, databaseFilename);
+
+            
         }
+            imshow("Feature Visualization", frame);
+
 
         // Handle user input
         char key = (char)waitKey(1);
@@ -169,6 +172,9 @@ int main()
             printConfusionMatrix(confusionMatrix);
 
             cout << "Accuracy: " << calculateAccuracy(confusionMatrix) << endl;
+        }else if (key == 'd' || key == 'D')
+        {
+            state = DETECTION;
         }
         else if (key == 27 || key == 'q')
         {
