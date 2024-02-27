@@ -13,10 +13,7 @@ This is the main file for the image processing application.
 using namespace std;
 using namespace cv;
 
-std::vector<std::string> getLabels() {
-    // You should populate this list with the labels you are classifying
-    return {"controller", "gripper", "watch", "wallet", "unknown"};
-}
+
 
 /**
  * The main function for the image processing application.

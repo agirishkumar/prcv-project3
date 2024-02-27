@@ -178,5 +178,6 @@ double calculateAccuracy(const std::map<std::string, std::map<std::string, int>>
 
 int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector<Coordinate> obb);
 
+std::vector<std::string> getLabels();
 
 #endif // MHELPERS_H

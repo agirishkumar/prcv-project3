@@ -909,7 +909,7 @@ float calculateScaledEuclideanDistance(const std::vector<float> &vec1, const std
  */
 std::string compareWithDatabase(const std::map<int, DatabaseEntry> &database, const std::vector<float> &features, const std::vector<float> &stdDev, float &minDistance)
 {
-  std::string closestLabel = "Unknown";
+  std::string closestLabel = "unknown";
   minDistance = std::numeric_limits<float>::max();
 
   for (const auto &entry : database)
@@ -1098,9 +1098,9 @@ string detectAndLabelRegions(cv::Mat &image, const cv::Mat &regionMap, const std
 
     cv::Point labelPos(features.centroid.x, features.centroid.y);
     if (minDistance <= 0.75) {
-        cv::putText(image, "Object: " + label + " Percentage filled: " + to_string(features.percentFilled), labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+        cv::putText(image, "Object: " + label , labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
     } else {
-        cv::putText(image, "Unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
+        cv::putText(image, "unknown", labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
     }
     
 
@@ -1179,11 +1179,12 @@ int drawFeatures(Mat & image, String regionName, RegionFeatures features, vector
         }
       }
       int font = FONT_HERSHEY_SIMPLEX;
-      int fontScale = 1;
+      float fontScale = 0.5;
       Scalar color(0, 255, 0);
-      int thickness = 1;
+      int thickness = 2;
       int lineType = LINE_AA;
       String text = "Percent Filled: " + to_string(features.percentFilled);
+      
       posy = features.centroid.y - (maxY - posy) / 2;
       //Point position(features.centroid.x - 10, posy);
       Point position(features.centroid.x, features.centroid.y - 50);
@@ -1220,12 +1221,24 @@ void updateConfusionMatrix(map<string, map<string, int>>& confusionMatrix, const
     confusionMatrix[trueLabel][predictedLabel]++;
 }
 
-void printConfusionMatrix(const map<string, map<string, int>>& confusionMatrix) {
-    for (const auto& row : confusionMatrix) {
-        for (const auto& col : row.second) {
-            cout << col.second << "\t";
+void printConfusionMatrix(const std::map<std::string, std::map<std::string, int>>& confusionMatrix) {
+    // First, print the header row with labels
+    cout << "\t";
+    for (const auto& labelRow : confusionMatrix) {
+        cout << labelRow.first << "\t";
+    }
+    cout << endl;
+
+    // Now print each row of the confusion matrix
+    for (const auto& labelRow : confusionMatrix) {
+        // Print the row label
+        cout << labelRow.first << "\t";
+        for (const auto& labelColumn : labelRow.second) {
+            // Print each cell in the row
+            cout << labelColumn.second << "\t";
         }
-        cout << "\n";
+        // End the row with a new line
+        cout << endl;
     }
 }
 
@@ -1255,4 +1268,14 @@ double calculateAccuracy(const std::map<std::string, std::map<std::string, int>>
     }
 
     return totalPredictions > 0 ? static_cast<double>(correctPredictions) / totalPredictions : 0;
+}
+
+/**
+ * Retrieves the labels for classification.
+ *
+ * @return a vector of strings containing the labels
+ */
+std::vector<std::string> getLabels() {
+    // You should populate this list with the labels you are classifying
+    return {"controller", "gripper", "watch", "wallet", "vape"};
 }
