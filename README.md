@@ -1,8 +1,8 @@
 # prcv-project3
 # Real-time 2-D Object Recognition
 
-## Girish Kumar and Alexander Seljuk
-## Time travel days: 2
+### Girish Kumar and Alexander Seljuk
+Time travel days used: 2
 
 This project explores binary image classification using threshholding, cleanup, segmentation, feature extraction, feature matching. Every object detected is classified given a database of features and labels. All the steps were implemented from the scratch.
 
